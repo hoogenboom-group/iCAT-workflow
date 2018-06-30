@@ -15,7 +15,6 @@ from renderapi.tilespec import TileSpec
 # --------
 # 1 Create Stacks
 # --------
-
 # Project, stack, and match collection names
 owner = 'lanery'
 project = 'iCAT_demo'
@@ -49,7 +48,6 @@ for stack in stacks:
 # --------
 # 2 Import Image Tile Data
 # --------
-
 # Storage parameters
 data_dir = Path('/data/projects/iCAT_demo/iCAT_sample_data')
 # big_tile_convention = ''
@@ -70,46 +68,47 @@ scopeId = 'SECOM'
 cameraId = 'Andor'
 
 
+# for 
+
 for i, stack in enumerate(stacks):
     tilespecs = []
-    for section in range(N_sections):
-        for r in range(N_rows):
-            for c in range(N_cols):
-                x_pos = c * W * (1 - overlaps[i]) * resolutions[i]
-                y_pos = r * H * (1 - overlaps[i]) * resolutions[i]
-                layout = Layout(sectionId=f'{section:05d}',
-                                scopeId='Verios',
-                                cameraId='Andor',
-                                imageRow=0,
-                                imageCol=0,
-                                stageX=x_pos,
-                                stageY=y_pos,
-                                rotation=0.0,
-                                pixelsize=resolutions[i])
+    for r in range(N_rows):
+        for c in range(N_cols):
+            x_pos = c * W * (1 - overlaps[i]) * resolutions[i]
+            y_pos = r * H * (1 - overlaps[i]) * resolutions[i]
+            layout = Layout(sectionId=f'{section:05d}',
+                            scopeId='Verios',
+                            cameraId='Andor',
+                            imageRow=0,
+                            imageCol=0,
+                            stageX=x_pos,
+                            stageY=y_pos,
+                            rotation=0.0,
+                            pixelsize=resolutions[i])
 
-                # Define a simple transformation - translation based on layout
-                at = AffineModel(B0=layout.stageX/layout.pixelsize,
-                                 B1=layout.stageY/layout.pixelsize)
+            # Define a simple transformation - translation based on layout
+            at = AffineModel(B0=layout.stageX/layout.pixelsize,
+                             B1=layout.stageY/layout.pixelsize)
 
-                # Define unique tile specifications
-                tileId = tile_convention.replace('__c__', f'{c:05d}').replace(
-                                                 '__r__', f'{r:05d}')
-                tileId = tileId.replace('tile', stack)
-                tilePath = Path(tile_dir).joinpath(stack).joinpath(
-                                tileId).with_suffix(tile_ext)
-                imageUrl = tilePath.as_posix()
-                ts = TileSpec(tileId=tileId,
-                              z=section,
-                              width=W,
-                              height=H,
-                              minint=intensity_ranges[i][0],
-                              maxint=intensity_ranges[i][1],
-                              imageUrl=imageUrl,
-                              maskUrl=None,
-                              layout=layout,
-                              tforms=[at])
-                # Append each tilespec to list
-                tilespecs.append(ts)
+            # Define unique tile specifications
+            tileId = tile_convention.replace('__c__', f'{c:05d}').replace(
+                                             '__r__', f'{r:05d}')
+            tileId = tileId.replace('tile', stack)
+            tilePath = Path(tile_dir).joinpath(stack).joinpath(
+                            tileId).with_suffix(tile_ext)
+            imageUrl = tilePath.as_posix()
+            ts = TileSpec(tileId=tileId,
+                          z=section,
+                          width=W,
+                          height=H,
+                          minint=intensity_ranges[i][0],
+                          maxint=intensity_ranges[i][1],
+                          imageUrl=imageUrl,
+                          maskUrl=None,
+                          layout=layout,
+                          tforms=[at])
+            # Append each tilespec to list
+            tilespecs.append(ts)
 
     renderapi.client.import_tilespecs(stack,
                                       tilespecs,

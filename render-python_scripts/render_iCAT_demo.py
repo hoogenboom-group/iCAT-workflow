@@ -12,9 +12,10 @@ from renderapi.transform import AffineModel
 from renderapi.tilespec import TileSpec
 
 
-# --------
+# ---------------
 # 1 Create Stacks
-# --------
+# ---------------
+
 # Project, stack, and match collection names
 owner = 'lanery'
 project = 'iCAT_demo'
@@ -23,10 +24,6 @@ stacks = ['lil_EM',
           'hoechst',
           'amylase',
           'insulin']
-match_collections = ['EM_matches',
-                     'hoechst_matches',
-                     'amylase_matches',
-                     'insulin_matches']
 
 # Create a renderapi.connect.Render object
 render_connect_params = {
@@ -40,35 +37,66 @@ render_connect_params = {
 }
 render = renderapi.connect(**render_connect_params)
 
-# Actually create stacks
+# Actually create (empty) stacks
 for stack in stacks:
     renderapi.stack.create_stack(stack, render=render)
 
 
-# --------
+# ------------------------
 # 2 Import Image Tile Data
-# --------
-# Storage parameters
-data_dir = Path('/data/projects/iCAT_demo/iCAT_sample_data')
-# big_tile_convention = ''
+# ------------------------
 
-# Tile parameters
+# Global tile parameters
+data_dir = Path('/data/projects/iCAT_demo/iCAT_sample_data')
+tile_convention = '{stack}-{c}x{r}.ome.tif'
 width = 2048  # px
 height = 2048  # px
-lil_EM_res = 4.88  # nm/px
-big_EM_res = 84.9  # nm/px
-FM_res = 99.6  # nm/px
+z = 0  # first (and only) section
 
-# Grid parameters
-EM_overlap = 20  # %
-FM_overlap = 20  # %
-
+#   2a lil EM tiles
+#   ---------------
+# Tile parameters
+res = 4.88  # nm/px
+overlap = 20  # %
 # Acquisition parameters
+intensity_range = (31800, 35200)
+scopeId = 'Verios'
+cameraId = 'TLD'
+
+
+#   2b big EM tiles
+#   ---------------
+# Tile parameters
+res = 84.9  # nm/px
+overlap = 20  # %
+# Acquisition parameters
+intensity_range = (30500, 32100)
+scopeId = 'Verios'
+cameraId = 'TLD'
+
+
+
+#   2c FM tiles
+#   -----------
+# Tile parameters
+res = 99.6  # nm/px
+overlap = 20  # %
+# Acquisition parameters
+intensity_range = (2000, 8000)
 scopeId = 'SECOM'
 cameraId = 'Andor'
 
 
-# for 
+
+
+
+
+
+
+
+
+
+
 
 for i, stack in enumerate(stacks):
     tilespecs = []

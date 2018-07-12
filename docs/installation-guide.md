@@ -46,7 +46,7 @@ data
 
 ```
 
-## Install Miniconda (Recommended)
+## Install Miniconda
 If conda is not already installed, navigate to https://conda.io/miniconda.html and download the 64-bit bash installer. Install via
 ```
 bash ~/Downloads/Miniconda3-latest-Linux-x86_64.sh

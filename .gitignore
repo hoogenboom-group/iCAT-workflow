@@ -122,3 +122,7 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+# Hidden files
+*.sec
+docs/*.sec

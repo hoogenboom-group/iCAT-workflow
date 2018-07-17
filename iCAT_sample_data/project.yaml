@@ -1,0 +1,63 @@
+project:
+  title: "iCAT Demo"
+  stacks:
+    # lil_EM
+    - title: "Little EM"
+      description: "Little EM tiles"
+      dimension: "(11878, 10240, 1)"
+      resolution: "(4.829, 4.829, 1.0)"
+      zoomlevels: 4
+      translation: "(5000.0, 0.0, 0.0)"
+      mirrors:
+        - title: "EM Data"
+          folder: "lil_EM"
+          image_base: "http://sonic/long_term_storage/<user>/CATMAID/projects/iCAT_demo/lil_EM/"
+          fileextension: "png"
+          tile_width: 1024
+          tile_height: 1024
+          tile_source_type: 1
+    # hoechst
+    - title: "Hoechst"
+      description: "Hoechst tiles"
+      dimension: "(2048, 2048, 1)"
+      resolution: "(99.6, 99.6, 1.0)"
+      zoomlevels: 4
+      translation: "(0.0, 0.0, 0.0)"
+      mirrors:
+        - title: "Hoechst Data"
+          folder: "hoechst"
+          image_base: "http://sonic/long_term_storage/<user>/CATMAID/projects/iCAT_demo/hoechst/"
+          fileextension: "png"
+          tile_width: 1024
+          tile_height: 1024
+          tile_source_type: 1
+    # amylase
+    - title: "Amylase"
+      description: "Amylase tiles"
+      dimension: "(2048, 2048, 1)"
+      resolution: "(99.6, 99.6, 1.0)"
+      zoomlevels: 4
+      translation: "(0.0, 0.0, 0.0)"
+      mirrors:
+        - title: "Amylase Data"
+          folder: "amylase"
+          image_base: "http://sonic/long_term_storage/<user>/CATMAID/projects/iCAT_demo/amylase/"
+          fileextension: "png"
+          tile_width: 1024
+          tile_height: 1024
+          tile_source_type: 1
+    # insulin
+    - title: "Insulin"
+      description: "Insulin tiles"
+      dimension: "(2048, 2048, 1)"
+      resolution: "(99.6, 99.6, 1.0)"
+      zoomlevels: 4
+      translation: "(0.0, 0.0, 0.0)"
+      mirrors:
+        - title: "Insulin Data"
+          folder: "insulin"
+          image_base: "http://sonic/long_term_storage/<user>/CATMAID/projects/iCAT_demo/insulin/"
+          fileextension: "png"
+          tile_width: 1024
+          tile_height: 1024
+          tile_source_type: 1

@@ -1,0 +1,60 @@
+{
+   "first_section": 0, 
+   "last_section": 0,
+   "solve_type": "montage",
+   "close_stack": "True",
+   "transformation": "affine",
+   "start_from_file": "",
+   "output_mode": "stack",
+   "input_stack": {
+       "owner": "",
+       "project": "",
+       "name": "",
+       "host": "sonic",
+       "port": 8080,
+       "mongo_host": "sonic",
+       "mongo_port": 27017,
+       "client_scripts": "",
+       "collection_type": "stack",
+       "db_interface": "mongo"
+   }, 
+   "pointmatch": {
+       "owner": "", 
+       "name": "",
+       "host": "sonic", 
+       "port": 8080, 
+       "mongo_host": "sonic", 
+       "mongo_port": 27017,
+       "client_scripts": "/usr/local/render/render-ws-java-client/src/main/scripts",
+       "collection_type": "pointmatch",
+       "db_interface": "mongo"
+   },
+   "output_stack": {
+       "owner": "",
+       "project": "",
+       "name": "",
+       "host": "sonic",
+       "port": 8080,
+       "mongo_host": "sonic",
+       "mongo_port": 27017,
+       "client_scripts": "/usr/local/render/render-ws-java-client/src/main/scripts",
+       "collection_type": "stack",
+       "db_interface": "render"
+   }, 
+   "hdf5_options": {
+       "output_dir": "",
+       "chunks_per_file": -1
+   },
+   "matrix_assembly": {
+       "depth": 2,
+       "montage_pt_weight": 1.0,
+       "cross_pt_weight": 0.5,
+       "npts_min": 5,
+       "npts_max": 500,
+       "inverse_dz":"True"
+   },
+   "regularization": {
+       "default_lambda": 1.0e3,
+       "translation_factor": 1.0e-5
+   }
+}

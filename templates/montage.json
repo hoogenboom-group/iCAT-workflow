@@ -14,7 +14,7 @@
        "port": 8080,
        "mongo_host": "sonic",
        "mongo_port": 27017,
-       "client_scripts": "",
+       "client_scripts": "/home/catmaid/render/render-ws-java-client/src/main/scripts",
        "collection_type": "stack",
        "db_interface": "mongo"
    }, 
@@ -25,7 +25,7 @@
        "port": 8080, 
        "mongo_host": "sonic", 
        "mongo_port": 27017,
-       "client_scripts": "/usr/local/render/render-ws-java-client/src/main/scripts",
+       "client_scripts": "/home/catmaid/render/render-ws-java-client/src/main/scripts",
        "collection_type": "pointmatch",
        "db_interface": "mongo"
    },
@@ -37,7 +37,7 @@
        "port": 8080,
        "mongo_host": "sonic",
        "mongo_port": 27017,
-       "client_scripts": "/usr/local/render/render-ws-java-client/src/main/scripts",
+       "client_scripts": "/home/catmaid/render/render-ws-java-client/src/main/scripts",
        "collection_type": "stack",
        "db_interface": "render"
    }, 

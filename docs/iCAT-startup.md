@@ -48,8 +48,9 @@ rm ~/miniconda.sh
 ## Install render-python
 I have no idea how to use the render-ws library. Luckily, Forrest Collman at the Allen Institute wrote a python api for render-ws that someone who knows nothing about java can use. First create a new virtual environment (named `icat`) with a bunch of packages pre-installed. Some of these are required and/or recommended for `render-python`, others are just convenient.
 ```
-conda create -n icat numpy scipy cython matplotlib pandas scikit-image jupyter ipython tqdm seaborn beautifulsoup4
+conda create -n icat <packages>
 ```
+Packages: `numpy scipy cython matplotlib pandas scikit-image jupyter ipython tqdm seaborn beautifulsoup4 lxml`
 
 Then activate the new virtual environment and install `render-python` via
 ```

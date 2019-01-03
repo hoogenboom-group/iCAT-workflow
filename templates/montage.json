@@ -54,7 +54,7 @@
        "inverse_dz":"True"
    },
    "regularization": {
-       "default_lambda": 1.0e3,
-       "translation_factor": 1.0e-5
+       "default_lambda": 1.0e4,
+       "translation_factor": 0.1
    }
 }

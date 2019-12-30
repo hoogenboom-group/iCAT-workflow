@@ -31,23 +31,23 @@ def parse_metadata(filepath, section):
 
     # Layout parameters
     # -----------------
-    layout = {}
+    tile_dict = {}
     # Set sectionId
-    layout['sectionId'] = section
+    tile_dict['sectionId'] = section
     # Parse metadata for scope and camera IDs
-    layout['scopeId'] = soup.microscope.get('model')
-    layout['cameraId'] = soup.detector.get('model')
+    tile_dict['scopeId'] = soup.microscope.get('model')
+    tile_dict['cameraId'] = soup.detector.get('model')
     # Infer image row and column from image tile filename
     col, row = [int(i) for i in re.findall(r'\d+', filepath.name)[-2:]]
-    layout['imageRow'] = row
-    layout['imageCol'] = col
+    tile_dict['imageRow'] = row
+    tile_dict['imageCol'] = col
     # Parse metadata for stage coordinates
-    layout['stageX'] = 1e6 * float(soup.plane['positionx'])  # m --> um
-    layout['stageY'] = 1e6 * float(soup.plane['positiony'])  # m --> um
+    tile_dict['stageX'] = 1e6 * float(soup.plane['positionx'])  # m --> um
+    tile_dict['stageY'] = 1e6 * float(soup.plane['positiony'])  # m --> um
     # Parse metadata for pixel size
     psx = 1e3 * float(soup.pixels['physicalsizex'])  # um --> nm
     psy = 1e3 * float(soup.pixels['physicalsizey'])  # um --> nm
-    layout['pixelsize'] = (psx + psy) / 2            # nm/px
+    tile_dict['pixelsize'] = (psx + psy) / 2            # nm/px
 
     # Tile specification parameters
     # -----------------------------
@@ -66,8 +66,6 @@ def parse_metadata(filepath, section):
     # Set unique tileId
     tile_dict['tileId'] = f"{filepath.stem.split('-')[0]}-"\
                           f"{section}-{col:05d}x{row:05d}"
-    # Add layout to tile dict
-    tile_dict['layout'] = layout
 
     # Additional tile specification parameters
     # ----------------------------------------

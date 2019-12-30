@@ -64,7 +64,10 @@ def parse_metadata(filepath, section):
     tile_dict['minint'] = 0
     tile_dict['maxint'] = 2**16 - 1
     # Set unique tileId
-    tile_dict['tileId'] = f"{filepath.stem.split('-')[0]}-{section}-{col:05d}x{row:05d}"
+    tile_dict['tileId'] = f"{filepath.stem.split('-')[0]}-"\
+                          f"{section}-{col:05d}x{row:05d}"
+    # Add layout to tile dict
+    tile_dict['layout'] = layout
 
     # Additional tile specification parameters
     # ----------------------------------------

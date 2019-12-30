@@ -62,8 +62,8 @@ def parse_metadata(filepath, section):
     # Set min, max intensity levels at 16bit uint limits
     tile_dict['minint'] = 0
     tile_dict['maxint'] = 2**16 - 1
-    # Set no transforms
-    tile_dict['tforms'] = None
+    # Set empty list of transforms
+    tile_dict['tforms'] = []
     # Set unique tileId
     tile_dict['tileId'] = f"{filepath.stem.split('-')[0]}-"\
                           f"{section}-{col:05d}x{row:05d}"

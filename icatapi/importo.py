@@ -8,19 +8,19 @@ from skimage.external.tifffile import TiffFile
 
 
 def parse_metadata(filepath, section):
-    """Parses metadata from specified tile image filepath
+    """Parses metadata from specified image tile filepath
 
     Parameters
     ----------
     filepath : `pathlib.Path`
-        Path to tile image location in `pathlib.Path` representation
+        Path to image tile location in `pathlib.Path` representation
     section : str
-        Name of section to which tile image belongs
+        Name of section to which image tile belongs
 
     Returns
     -------
     tile_dict : dict
-        Almighty dictionary containing lots of juicy info about the tile image
+        Almighty dictionary containing lots of juicy info about the image tile
     """
 
     # Read metadata

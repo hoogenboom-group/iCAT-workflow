@@ -8,12 +8,12 @@ from skimage.external.tifffile import TiffFile
 
 
 def parse_metadata(filepath, section):
-    """Parses metadata from specified image tile filepath
+    """Parses Odemis (single-page) tif file metadata
 
     Parameters
     ----------
     filepath : `pathlib.Path`
-        Path to image tile location in `pathlib.Path` representation
+        Path to image tile location as `pathlib.Path` object
     section : str
         Name of section to which image tile belongs
 
@@ -62,6 +62,8 @@ def parse_metadata(filepath, section):
     # Set min, max intensity levels at 16bit uint limits
     tile_dict['minint'] = 0
     tile_dict['maxint'] = 2**16 - 1
+    # Set no transforms
+    tile_dict['tforms'] = None
     # Set unique tileId
     tile_dict['tileId'] = f"{filepath.stem.split('-')[0]}-"\
                           f"{section}-{col:05d}x{row:05d}"
@@ -72,4 +74,3 @@ def parse_metadata(filepath, section):
     tile_dict['acqTime'] = pd.to_datetime(soup.acquisitiondate.text)
 
     return tile_dict
-

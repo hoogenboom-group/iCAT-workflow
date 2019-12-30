@@ -28,10 +28,10 @@ def parse_metadata(filepath, section):
     tif = TiffFile(filepath.as_posix())
     metadata = tif.pages[0].image_description
     soup = Soup(metadata, 'lxml')
+    tile_dict = {}
 
     # Layout parameters
     # -----------------
-    tile_dict = {}
     # Set sectionId
     tile_dict['sectionId'] = section
     # Parse metadata for scope and camera IDs
@@ -47,11 +47,10 @@ def parse_metadata(filepath, section):
     # Parse metadata for pixel size
     psx = 1e3 * float(soup.pixels['physicalsizex'])  # um --> nm
     psy = 1e3 * float(soup.pixels['physicalsizey'])  # um --> nm
-    tile_dict['pixelsize'] = (psx + psy) / 2            # nm/px
+    tile_dict['pixelsize'] = (psx + psy) / 2         # nm/px
 
     # Tile specification parameters
     # -----------------------------
-    tile_dict = {}
     # Set z based on section name
     tile_dict['z'] = int(re.findall(r'\d+', section)[-1])
     # Parse metadata for width and height

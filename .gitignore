@@ -126,3 +126,7 @@ $RECYCLE.BIN/
 # Hidden files
 *.sec
 docs/*.sec
+
+# VS code stuff
+*.code-workspace
+.vscode/*

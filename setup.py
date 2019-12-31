@@ -14,6 +14,7 @@ INSTALL_REQUIRES = [
     "numpy",
     "scipy",
     "scikit-image",
+    "render-python",
 ]
 
 if __name__ == '__main__':

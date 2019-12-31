@@ -110,3 +110,24 @@ def create_transforms_DataFrame(stack, render):
     df_transforms = pd.DataFrame([df_transforms[T].apply(
         np.array, **{'dtype': float}) for T in df_transforms.columns]).T
     return df_transforms
+
+
+def create_tilemap_DataFrame(render):
+    """
+    """
+    tilemap_cols = ['stack', 'z', 'sectionId',
+                    'tileId', 'width', 'height',
+                    'imageRow', 'imageCol']
+
+    # Create project DataFrame
+    df_project = create_project_DataFrame(render=render)
+
+    # Combine transforms DataFrames for each stack
+    df_transforms = pd.DataFrame(columns=['stack'])
+    for stack in renderapi.render.get_stacks_by_owner_project(render=render):
+        df = create_transforms_DataFrame(stack, render=render)
+        df['stack'] = stack
+        df_transforms = df_transforms.append(df, sort=False)
+
+    # Merge with project DataFrame to get section info
+    df_tilemap = df_project[tilemap_cols].reset_index().merge(df_transforms.reset_index())

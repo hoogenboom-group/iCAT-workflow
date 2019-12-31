@@ -23,6 +23,8 @@ def create_stack_DataFrame(stack, render):
                                                               render=render)
     # Create DataFrame from tile specifications
     df_stack = pd.DataFrame([ts.to_dict() for ts in tile_specs])
+    # Add stack to DataFrame
+    df_stack['stack'] = stack
     # Expand `layout` column
     if 'layout' in df_stack.columns:
         df_stack = pd.concat([df_stack.drop('layout', axis=1),

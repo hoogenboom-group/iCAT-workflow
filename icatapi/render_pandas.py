@@ -131,3 +131,5 @@ def create_tilemap_DataFrame(render):
 
     # Merge with project DataFrame to get section info
     df_tilemap = df_project[tilemap_cols].reset_index().merge(df_transforms.reset_index())
+
+    return df_tilemap

@@ -106,4 +106,7 @@ def create_transforms_DataFrame(stack, render):
     mapping = zip(df_transforms.columns,
                   [f"T{i}" for i in df_transforms.columns])
     df_transforms.rename(columns={k: v for k, v in mapping}, inplace=True)
+    # Convert string data to float
+    df_transforms = pd.DataFrame([df_transforms[T].apply(
+        np.array, **{'dtype': float}) for T in df_transforms.columns]).T
     return df_transforms

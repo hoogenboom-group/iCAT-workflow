@@ -1,17 +1,26 @@
-
-
 import numpy as np
 import pandas as pd
-
-from renderapi.tilespec import get_tile_specs_from_stack
+import renderapi
 
 
 def create_stack_DataFrame(stack, render):
-    """
+    """Create DataFrame of `TileSpec`s from a given stack
+
+    Parameters
+    ----------
+    stack : str
+        Stack from which to generate DataFrame
+    render : `renderapi.render.RenderClient`
+        `render-ws` instance
+    
+    Returns
+    -------
+    df_stack : `pd.DataFrame`
+        DataFrame of all `TileSpec`s from given stack
     """
     # Gather tile specifications from specified stack
-    tile_specs = get_tile_specs_from_stack(stack=stack,
-                                        render=render)
+    tile_specs = renderapi.tilespec.get_tile_specs_from_stack(stack=stack,
+                                                              render=render)
     # Create DataFrame from tile specifications
     df_stack = pd.DataFrame([ts.to_dict() for ts in tile_specs])
     # Expand `layout` column
@@ -30,10 +39,47 @@ def create_stack_DataFrame(stack, render):
     return df_stack
 
 
-def create_project_DataFrame():
+def create_stacks_DataFrame(stacks, render):
+    """Create DataFrame of `TileSpec`s from multiple stacks within a project
+
+    Parameters
+    ----------
+    stacks : list
+        List of stacks from which to generate DataFrame
+    render : `renderapi.render.RenderClient`
+        `render-ws` instance
+    
+    Returns
+    -------
+    df_stacks : `pd.DataFrame`
+        DataFrame of all `TileSpec`s from given stacks
     """
+    # Initialize DataFrame
+    df_stacks = pd.DataFrame()
+    # Create and append DataFrames from each given stack
+    for stack in stacks:
+        df_stack = create_stack_DataFrame(stack, render=render)
+        df_stacks = df_stacks.append(df_stack)
+    return df_stacks
+
+
+def create_project_DataFrame(render):
+    """Create DataFrame of `TileSpec`s from all stacks within a project
+
+    Parameters
+    ----------
+    render : `renderapi.render.RenderClient`
+        `render-ws` instance
+    
+    Returns
+    -------
+    df_project : `pd.DataFrame`
+        DataFrame of all `TileSpec`s from within a project
     """
-    pass
+    # Get all stacks within project
+    stacks = renderapi.render.get_stacks_by_owner_project(render=render)
+    df_project = create_stacks_DataFrame(stacks, render=render)
+    return df_project
 
 
 def create_transform_DataFrame():

@@ -59,7 +59,7 @@ def create_stacks_DataFrame(stacks, render):
     # Create and append DataFrames from each given stack
     for stack in stacks:
         df_stack = create_stack_DataFrame(stack, render=render)
-        df_stacks = df_stacks.append(df_stack)
+        df_stacks = df_stacks.append(df_stack, sort=False)
     return df_stacks
 
 
@@ -90,7 +90,18 @@ def create_transforms_DataFrame(stack, render):
                                                               render=render)
     # Create DataFrame from tile specifications
     df_stack = pd.DataFrame([ts.to_dict() for ts in tile_specs])
-
-    df_transforms = df_stack['transforms']
-
+    # Do a ridiculous number of pandas hacks to unpack transforms
+    df_transforms = df_stack['transforms'].apply(pd.Series)['specList']\
+                                          .apply(pd.Series)\
+                                          .unstack()\
+                                          .apply(pd.Series)['dataString']\
+                                          .str.split(' ')\
+                                          .to_frame()\
+                                          .unstack(level=0)
+    # Remove multiindex column
+    df_transforms.columns = df_transforms.columns.droplevel()
+    # Rename columns to (`T0`, `T1`, `T2`, ...)
+    mapping = zip(df_transforms.columns,
+                  [f"T{i}" for i in df_transforms.columns])}
+    df_transforms.rename(columns={k: v for k, v in mapping}, inplace=True)
     return df_transforms

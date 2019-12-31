@@ -102,6 +102,6 @@ def create_transforms_DataFrame(stack, render):
     df_transforms.columns = df_transforms.columns.droplevel()
     # Rename columns to (`T0`, `T1`, `T2`, ...)
     mapping = zip(df_transforms.columns,
-                  [f"T{i}" for i in df_transforms.columns])}
+                  [f"T{i}" for i in df_transforms.columns])
     df_transforms.rename(columns={k: v for k, v in mapping}, inplace=True)
     return df_transforms

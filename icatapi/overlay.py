@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup as Soup
 from skimage.external.tifffile import TiffFile
 
 
-def get_tform_metadata(filepath):
+def get_transform_metadata(filepath):
     """Parse Odemis (single-page) tiff file for transformation data
 
     Parameters
@@ -38,7 +38,7 @@ def get_tform_metadata(filepath):
 
     # Parse out rotation matrix
     md = soup.transform
-    A00 = float(md['a00'])  #  /         \
+    A00 = float(md['a00'])  # /         \
     A01 = float(md['a01'])  # | a00  a01 |
     A10 = float(md['a10'])  # | a10  a11 |
     A11 = float(md['a11'])  # \         /
@@ -61,3 +61,56 @@ def get_tform_metadata(filepath):
     translation = (x0, y0)
 
     return pixelsize, rotation, shear, translation
+
+
+def compute_relative_transform(fp_EM, fp_FM):
+    """Compute affine transformation between correlative EM and FM image tiles
+
+    Parameters
+    ----------
+    fp_EM : `Path`
+        Filepath to EM image tile
+
+    fp_FM : `Path`
+        Filepath to FM image tile
+
+    Returns
+    -------
+    A : 3x3 array
+        Relative affine transformation
+    """
+    # Parse transform data
+    # --------------------
+    tform_md_EM = get_transform_metadata(fp_EM)
+    tform_md_FM = get_transform_metadata(fp_FM)
+
+    # Calculate relative transform
+    # ----------------------------
+    scale_x = tform_md_FM[0][0] / tform_md_EM[0][0]
+    scale_y = tform_md_FM[0][1] / tform_md_EM[0][1]
+    rotation = tform_md_FM[1]
+    shear = tform_md_EM[2]
+    translation_x = (tform_md_FM[3][0] - tform_md_EM[3][0]) / tform_md_EM[0][0]
+    translation_y = (tform_md_FM[3][1] - tform_md_EM[3][1]) / tform_md_EM[0][1]
+
+    # Create transformation matrices
+    # ------------------------------
+    # Scale
+    S = np.array([[scale_x, 0, 0],
+                  [0, scale_y, 0],
+                  [0,       0, 1]])
+    # Rotation
+    R = np.array([[np.cos(-rotation), -np.sin(-rotation), 0],
+                  [np.sin(-rotation),  np.cos(-rotation), 0],
+                  [                0,                  0, 1]])
+    # Shear
+    Sh = np.array([[1, shear, 0],
+                  [0,     1, 0],
+                  [0,     0, 1]])
+    # Translation
+    Tr = np.array([[1, 0, translation_x],
+                  [0, 1, translation_y],
+                  [0, 0,             1]])
+    # Product
+    A = R @ Tr @ Sh @ S
+    return A

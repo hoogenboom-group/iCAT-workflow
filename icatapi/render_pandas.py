@@ -12,7 +12,7 @@ def create_stack_DataFrame(stack, render):
         Stack from which to generate DataFrame
     render : `renderapi.render.RenderClient`
         `render-ws` instance
-    
+
     Returns
     -------
     df_stack : `pd.DataFrame`
@@ -23,21 +23,30 @@ def create_stack_DataFrame(stack, render):
                                                               render=render)
     # Create DataFrame from tile specifications
     df_stack = pd.DataFrame([ts.to_dict() for ts in tile_specs])
+
     # Add stack to DataFrame
     df_stack['stack'] = stack
+
     # Expand `layout` column
     if 'layout' in df_stack.columns:
         df_stack = pd.concat([df_stack.drop('layout', axis=1),
                               df_stack['layout'].apply(pd.Series)], axis=1)
+
     # Collapse `mipmapLevels` column to get `imageUrl`
     if 'mipmapLevels' in df_stack.columns:
         df_stack = pd.concat([df_stack.drop('mipmapLevels', axis=1),
                               df_stack['mipmapLevels'].apply(pd.Series)['0']\
                                                       .apply(pd.Series)], axis=1)
-    # Drop `transforms` column
+
+    # Expand `transforms` column
     if 'transforms' in df_stack.columns:
-        df_stack.drop('transforms', axis=1, inplace=True)
-    # Return stack DataFrame
+        df_stack = pd.concat([df_stack.drop('transforms', axis=1),
+                              df_stack['transforms'].apply(
+                                  lambda x: [AffineRender(*np.array(
+                                  x['specList'][i]['dataString'].split(
+                                  ' '), dtype=np.float))\
+                                  for i in range(len(x['specList']))])], axis=1)
+
     return df_stack
 
 

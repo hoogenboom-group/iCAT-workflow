@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
-import renderapi
+
+from renderapi.render import get_stacks_by_owner_project
+from renderapi.tilespec import get_tile_specs_from_stack
+from renderapi.transform import AffineModel as AffineRender
 
 
 def create_stack_DataFrame(stack, render):
@@ -19,8 +22,8 @@ def create_stack_DataFrame(stack, render):
         DataFrame of all `TileSpec`s from given stack
     """
     # Gather tile specifications from specified stack
-    tile_specs = renderapi.tilespec.get_tile_specs_from_stack(stack=stack,
-                                                              render=render)
+    tile_specs = get_tile_specs_from_stack(stack=stack,
+                                           render=render)
     # Create DataFrame from tile specifications
     df_stack = pd.DataFrame([ts.to_dict() for ts in tile_specs])
 
@@ -71,7 +74,7 @@ def create_stacks_DataFrame(stacks, render):
     for stack in stacks:
         df_stack = create_stack_DataFrame(stack, render=render)
         df_stacks = df_stacks.append(df_stack, sort=False)
-    return df_stacks
+    return df_stacks.reset_index(drop=True)
 
 
 def create_project_DataFrame(render):
@@ -88,57 +91,6 @@ def create_project_DataFrame(render):
         DataFrame of all `TileSpec`s from within a project
     """
     # Get all stacks within project
-    stacks = renderapi.render.get_stacks_by_owner_project(render=render)
+    stacks = get_stacks_by_owner_project(render=render)
     df_project = create_stacks_DataFrame(stacks, render=render)
     return df_project
-
-
-def create_transforms_DataFrame(stack, render):
-    """
-    """
-    # Gather tile specifications from specified stack
-    tile_specs = renderapi.tilespec.get_tile_specs_from_stack(stack=stack,
-                                                              render=render)
-    # Create DataFrame from tile specifications
-    df_stack = pd.DataFrame([ts.to_dict() for ts in tile_specs])
-    # Do a ridiculous number of pandas hacks to unpack transforms
-    df_transforms = df_stack['transforms'].apply(pd.Series)['specList']\
-                                          .apply(pd.Series)\
-                                          .unstack()\
-                                          .apply(pd.Series)['dataString']\
-                                          .str.split(' ')\
-                                          .to_frame()\
-                                          .unstack(level=0)
-    # Remove multiindex column
-    df_transforms.columns = df_transforms.columns.droplevel()
-    # Rename columns to (`T0`, `T1`, `T2`, ...)
-    mapping = zip(df_transforms.columns,
-                  [f"T{i}" for i in df_transforms.columns])
-    df_transforms.rename(columns={k: v for k, v in mapping}, inplace=True)
-    # Convert string data to float
-    df_transforms = pd.DataFrame([df_transforms[T].apply(
-        np.array, **{'dtype': float}) for T in df_transforms.columns]).T
-    return df_transforms
-
-
-def create_tilemap_DataFrame(render):
-    """
-    """
-    tilemap_cols = ['stack', 'z', 'sectionId',
-                    'tileId', 'width', 'height',
-                    'imageRow', 'imageCol']
-
-    # Create project DataFrame
-    df_project = create_project_DataFrame(render=render)
-
-    # Combine transforms DataFrames for each stack
-    df_transforms = pd.DataFrame(columns=['stack'])
-    for stack in renderapi.render.get_stacks_by_owner_project(render=render):
-        df = create_transforms_DataFrame(stack, render=render)
-        df['stack'] = stack
-        df_transforms = df_transforms.append(df, sort=False)
-
-    # Merge with project DataFrame to get section info
-    df_tilemap = df_project[tilemap_cols].reset_index().merge(df_transforms.reset_index())
-
-    return df_tilemap

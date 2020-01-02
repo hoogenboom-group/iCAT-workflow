@@ -26,7 +26,6 @@ def create_stack_DataFrame(stack, render):
                                            render=render)
     # Create DataFrame from tile specifications
     df_stack = pd.DataFrame([ts.to_dict() for ts in tile_specs])
-
     # Add stack to DataFrame
     df_stack['stack'] = stack
 
@@ -41,7 +40,7 @@ def create_stack_DataFrame(stack, render):
                               df_stack['mipmapLevels'].apply(pd.Series)['0']\
                                                       .apply(pd.Series)], axis=1)
 
-    # Expand `transforms` column
+    # Collapse `transforms` column and create list of `AffineRender` transforms
     if 'transforms' in df_stack.columns:
         df_stack = pd.concat([df_stack.drop('transforms', axis=1),
                               df_stack['transforms'].apply(

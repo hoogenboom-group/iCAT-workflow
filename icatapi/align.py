@@ -5,6 +5,9 @@ from renderapi.client import tilePairClient
 from renderapi.stack import get_z_values_for_stack
 
 
+__all__ = ['get_tile_pairs_4_alignment']
+
+
 def get_tile_pairs_4_alignment(stack, render, zNeighborDistance=1):
     """Collect tile pairs across multiple sections for alignment
 

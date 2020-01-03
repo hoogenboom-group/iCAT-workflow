@@ -6,6 +6,11 @@ from bs4 import BeautifulSoup as Soup
 from skimage.external.tifffile import TiffFile
 
 
+__all__ = ['get_transform_metadata',
+           'compute_relative_transform',
+           'compute_relative_transform_from_filepaths']
+
+
 def get_transform_metadata(filepath):
     """Parse Odemis (single-page) tiff file for transformation data
 

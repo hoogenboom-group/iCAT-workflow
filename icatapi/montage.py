@@ -5,6 +5,9 @@ from renderapi.client import tilePairClient
 from renderapi.stack import get_z_values_for_stack
 
 
+__all__ = ['get_tile_pairs_4_montage']
+
+
 def get_tile_pairs_4_montage(stack, render):
     """Collect tile pairs from stack one section at a time for montaging
 

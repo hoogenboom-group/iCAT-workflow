@@ -7,6 +7,9 @@ from bs4 import BeautifulSoup as Soup
 from skimage.external.tifffile import TiffFile
 
 
+__all__ = ['parse_metadata']
+
+
 def parse_metadata(filepath, section):
     """Parses Odemis (single-page) tif file metadata
 

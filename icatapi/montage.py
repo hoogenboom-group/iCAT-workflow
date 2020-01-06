@@ -2,7 +2,7 @@ import re
 
 import numpy as np
 import pandas as pd
-from pd.io.json import json_normalize
+from pandas.io.json import json_normalize
 
 from renderapi.client import tilePairClient
 from renderapi.stack import get_z_values_for_stack

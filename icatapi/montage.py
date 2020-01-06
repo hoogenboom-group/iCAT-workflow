@@ -6,7 +6,7 @@ from pandas.io.json import json_normalize
 
 from renderapi.client import tilePairClient
 from renderapi.stack import get_z_values_for_stack
-from rendearpi.pointmatch import get_matches_within_group
+from renderapi.pointmatch import get_matches_within_group
 
 
 __all__ = ['get_tile_pairs_4_montage',

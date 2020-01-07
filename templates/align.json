@@ -51,8 +51,7 @@
        "cross_pt_weight": 1.0,
        "npts_min": 5,
        "npts_max": 500,
-       "inverse_dz":"True",
-       "verbose": 1,
+       "inverse_dz":"True"
    },
    "regularization": {
        "default_lambda": 0.005,

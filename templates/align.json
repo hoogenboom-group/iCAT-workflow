@@ -1,9 +1,9 @@
 {
-   "first_section": 0, 
+   "first_section": 0,
    "last_section": 0,
-   "solve_type": "montage",
+   "solve_type": "3D",
    "close_stack": "True",
-   "transformation": "rigid",
+   "transformation": "affine",
    "start_from_file": "",
    "output_mode": "stack",
    "input_stack": {
@@ -51,7 +51,8 @@
        "cross_pt_weight": 1.0,
        "npts_min": 5,
        "npts_max": 500,
-       "inverse_dz":"True"
+       "inverse_dz":"True",
+       "verbose": 1,
    },
    "regularization": {
        "default_lambda": 0.005,

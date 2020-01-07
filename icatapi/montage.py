@@ -9,8 +9,8 @@ from renderapi.stack import get_z_values_for_stack
 from renderapi.pointmatch import get_matches_within_group
 
 
-__all__ = ['get_tile_pairs_4_montage',
-           'get_matches_within_section']
+__all__ = ['get_tile_pairs_4_montage']
+        #    'get_matches_within_section'
 
 
 def get_tile_pairs_4_montage(stack, render):

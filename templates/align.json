@@ -6,6 +6,7 @@
    "transformation": "affine",
    "start_from_file": "",
    "output_mode": "stack",
+   "log_level": "INFO",
    "input_stack": {
        "owner": "",
        "project": "",

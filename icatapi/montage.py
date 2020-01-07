@@ -50,42 +50,42 @@ def get_tile_pairs_4_montage(stack, render):
     df_pairs['stack'] = stack
     return df_pairs.reset_index(drop=True)
 
+# TODO: make this function work
+# def get_matches_within_section(match_collection, sectionId, render):
+#     """Create DataFrame of point matches for a given section
 
-def get_matches_within_section(match_collection, sectionId, render):
-    """Create DataFrame of point matches for a given section
+#     Parameters
+#     ----------
+#     match_collection : str
+#         Name of match collection
+#     sectionId : str
+#         Name of section
+#         Aka `groupId` in `renderapi` terminology
+#     render : `renderapi.render.RenderClient`
+#         `render-ws` instance
 
-    Parameters
-    ----------
-    match_collection : str
-        Name of match collection
-    sectionId : str
-        Name of section
-        Aka `groupId` in `renderapi` terminology
-    render : `renderapi.render.RenderClient`
-        `render-ws` instance
+#     Returns
+#     -------
+#     df_matches : `pd.DataFrame`
+#         DataFrame of point matches from a given section
+#     """
+#     # Initialize point matches DataFrame
+#     matches_cols = ['pc', 'pr', 'qc', 'qr', 'N_matches']
+#     df_matches = pd.DataFrame(columns=matches_cols)
 
-    Returns
-    -------
-    df_matches : `pd.DataFrame`
-        DataFrame of point matches from a given section
-    """
-    # Initialize point matches DataFrame
-    matches_cols = ['pc', 'pr', 'qc', 'qr', 'N_matches']
-    df_matches = pd.DataFrame(columns=matches_cols)
+#     # Get point match data as json via `renderapi`
+#     matches_json = get_matches_within_group(matchCollection=match_collection,
+#                                             groupId=sectionId,
+#                                             render=render)
+#     # Create DataFrame from json and concatenate with point matches DataFrame
+#     df_matches = pd.concat([df_matches, json_normalize(matches_json)],
+#                            axis=1, sort=False)
 
-    # Get point match data as json via `renderapi`
-    matches_json = get_matches_within_group(matchCollection=match_collection,
-                                            groupId=sectionId,
-                                            render=render)
-    # Create DataFrame from json and concatenate with point matches DataFrame
-    df_matches = pd.concat([df_matches, json_normalize(matches_json)],
-                           axis=1, sort=False)
-
-    # Populate DataFrame with row, column and number of matches data
-    df_matches[['pc', 'pr']] = np.stack(df_matches['pId'].apply(lambda x:\
-                                   [int(i) for i in re.findall('\d+', x)[-2:]]))
-    df_matches[['qc', 'qr']] = np.stack(df_matches['qId'].apply(lambda x:\
-                                   [int(i) for i in re.findall('\d+', x)[-2:]]))
-    df_matches['N_matches'] = df_matches['matches.p'].apply(lambda x:\
-                                  np.array(x).shape[1])
-    return df_matches
+#     # Populate DataFrame with row, column and number of matches data
+#     df_matches[['pc', 'pr']] = np.stack(df_matches['pId'].apply(lambda x:\
+#                                    [int(i) for i in re.findall(r'\d+', x)[-2:]]))
+#     df_matches[['qc', 'qr']] = np.stack(df_matches['qId'].apply(lambda x:\
+#                                    [int(i) for i in re.findall(r'\d+', x)[-2:]]))
+#     df_matches['N_matches'] = df_matches['matches.p'].apply(lambda x:\
+#                                   np.array(x).shape[1])
+#     return df_matches

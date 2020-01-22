@@ -89,6 +89,21 @@ def compute_relative_transform(ps_EM, ps_FM,
     -------
     A : 3x3 array
         Relative affine transformation
+
+    Notes
+    -----
+    Still some question over the correct order in which to apply the
+    transformations. "Best" order found empirically was
+        1. Rotation
+        2. Translation
+        3. Shear
+        4. Scale
+    Order seemingly used in Odemis
+    (https://github.com/delmic/odemis/blob/master/src/odemis/gui/comp/canvas.py#L1044)
+        1. Rotation
+        2. Shear
+        3. Translation
+        4. Scale
     """
     # Calculate relative transform
     # ----------------------------
@@ -118,7 +133,7 @@ def compute_relative_transform(ps_EM, ps_FM,
                    [0, 1, tr_y],
                    [0, 0,    1]])
     # Product
-    A = R @ Tr @ Sh @ S
+    A = R @ Sh @ Tr @ S
     return A
 
 

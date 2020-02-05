@@ -126,8 +126,8 @@ def compute_relative_transform(ps_EM, ps_FM,
                   [          0,            0, 1]])
     # Shear
     Sh = np.array([[1, sh, 0],
-                  [0,   1, 0],
-                  [0,   0, 1]])
+                   [0,  1, 0],
+                   [0,  0, 1]])
     # Translation
     Tr = np.array([[1, 0, tr_x],
                    [0, 1, tr_y],

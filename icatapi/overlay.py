@@ -69,22 +69,32 @@ def get_transform_metadata(filepath):
     return pixelsize, rotation, shear, translation
 
 
-def compute_relative_transform(ps_EM, ps_FM,
-                               ro_EM, ro_FM,
-                               sh_EM, sh_FM,
-                               tr_EM, tr_FM):
+def compute_relative_transform(psx_EM, psy_EM,
+                               ro_EM, sh_EM,
+                               trx_EM, try_EM,
+                               psx_FM, psy_FM,
+                               ro_FM, sh_FM,
+                               trx_FM, try_FM):
     """Compute relative affine transformation
 
     Parameters
     ----------
-    ps_EM, ps_FM : tuple
-        EM, FM pixelsize respectively
-    ro_EM, ro_FM : float
-        EM, FM rotation respectively
-    sh_EM, sh_FM : float
-        EM, FM shear respectively
-    tr_EM, tr_FM : tuple
-        EM, FM translation respectively
+    psx_EM, psy_EM : float
+        EM pixel size in x, y [m]
+    ro_EM : float
+        EM rotation (should be ~0)
+    sh_EM : float
+        EM shear
+    trx_EM, try_EM : float
+        EM translation in x, y [m]
+    psx_FM, psy_FM : float
+        FM pixel size in x, y [m]
+    ro_FM : float
+        FM rotation
+    sh_FM : float
+        FM shear (should be ~0)
+    trx_FM, try_FM : float
+        FM translation in x, y [m]
 
     Returns
     -------
@@ -93,10 +103,10 @@ def compute_relative_transform(ps_EM, ps_FM,
     """
     A = AffineMPL().rotate(-ro_FM)\
                    .skew(0, -sh_EM)\
-                   .scale(ps_FM[0] / ps_EM[0],
-                          ps_FM[1] / ps_EM[1])\
-                   .translate((tr_FM[0] - tr_EM[0]) /  ps_EM[0],
-                              (tr_FM[0] - tr_EM[1]) / -ps_EM[1])
+                   .scale(psx_FM / psx_EM,
+                          psy_FM / psy_EM)\
+                   .translate((trx_FM - trx_EM) /  psx_EM,
+                              (try_FM - try_EM) / -psy_EM)
     return A.get_matrix()
 
 
@@ -117,13 +127,14 @@ def compute_relative_transform_from_filepaths(fp_EM, fp_FM):
         Relative affine transformation
     """
     # Parse transform data
-    tform_md_EM = get_transform_metadata(fp_EM)
-    tform_md_FM = get_transform_metadata(fp_FM)
+    (psx_EM, psy_EM), ro_EM, sh_EM, (trx_EM, try_EM) = get_transform_metadata(fp_EM)
+    (psx_FM, psy_FM), ro_FM, sh_FM, (trx_FM, try_FM) = get_transform_metadata(fp_FM)
 
     # Pass transform data to `compute_relative_transform`
-    tform_args = [tform_md_EM[0], tform_md_FM[0],
-                  tform_md_EM[1], tform_md_FM[1],
-                  tform_md_EM[2], tform_md_FM[2],
-                  tform_md_EM[3], tform_md_FM[3]]
-    A = compute_relative_transform(*tform_args)
+    A = compute_relative_transform(psx_EM, psy_EM,
+                                   ro_EM, sh_EM,
+                                   trx_EM, try_EM,
+                                   psx_FM, psy_FM,
+                                   ro_FM, sh_FM,
+                                   trx_FM, try_FM)
     return A

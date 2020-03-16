@@ -3,6 +3,7 @@ import re
 
 import numpy as np
 from bs4 import BeautifulSoup as Soup
+from matplotlib.transforms import Affine2D as AffineMPL
 from skimage.external.tifffile import TiffFile
 
 
@@ -89,52 +90,14 @@ def compute_relative_transform(ps_EM, ps_FM,
     -------
     A : 3x3 array
         Relative affine transformation
-
-    Notes
-    -----
-    Still some question over the correct order in which to apply the
-    transformations. "Best" order found empirically was
-        1. Rotation
-        2. Translation
-        3. Shear
-        4. Scale
-    Order seemingly used in Odemis
-    (https://github.com/delmic/odemis/blob/master/src/odemis/gui/comp/canvas.py#L1044)
-        1. Rotation
-        2. Shear
-        3. Translation
-        4. Scale
     """
-    # Calculate relative transform
-    # ----------------------------
-    sc_x = ps_FM[0] / ps_EM[0]
-    sc_y = ps_FM[1] / ps_EM[1]
-    ro = ro_FM - ro_EM
-    sh = sh_EM - sh_FM
-    tr_x = (tr_FM[0] - tr_EM[0]) / ps_EM[0]
-    tr_y = (tr_FM[1] - tr_EM[1]) / ps_EM[1]
-
-    # Create transformation matrices
-    # ------------------------------
-    # Scale
-    S = np.array([[sc_x, 0, 0],
-                  [0, sc_y, 0],
-                  [0,    0, 1]])
-    # Rotation
-    R = np.array([[np.cos(-ro), -np.sin(-ro), 0],
-                  [np.sin(-ro),  np.cos(-ro), 0],
-                  [          0,            0, 1]])
-    # Shear
-    Sh = np.array([[1, sh, 0],
-                   [0,  1, 0],
-                   [0,  0, 1]])
-    # Translation
-    Tr = np.array([[1, 0, tr_x],
-                   [0, 1, tr_y],
-                   [0, 0,    1]])
-    # Product
-    A = R @ Sh @ Tr @ S
-    return A
+    A = AffineMPL().rotate(-ro_FM)\
+                   .skew(0, -sh_EM)\
+                   .scale(ps_FM[0] / ps_EM[0],
+                          ps_FM[1] / ps_EM[1])\
+                   .translate((tr_FM[0] - tr_EM[0]) /  ps_EM[0],
+                              (tr_FM[0] - tr_EM[1]) / -ps_EM[1])
+    return A.get_matrix()
 
 
 def compute_relative_transform_from_filepaths(fp_EM, fp_FM):

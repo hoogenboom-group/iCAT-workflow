@@ -37,9 +37,6 @@ def parse_metadata(filepath, section):
     # -----------------
     # Set sectionId
     tile_dict['sectionId'] = section
-    # Parse metadata for scope and camera IDs
-    tile_dict['scopeId'] = soup.microscope.get('model')
-    tile_dict['cameraId'] = soup.detector.get('model')
     # Infer image row and column from image tile filename
     col, row = [int(i) for i in re.findall(r'\d+', filepath.name)[-2:]]
     tile_dict['imageRow'] = row

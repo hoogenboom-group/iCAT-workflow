@@ -37,7 +37,7 @@ def get_tile_pairs_4_montage(stack, render):
                                       render=render)
     for z in z_values:
         # Generate tile pairs
-        tile_pairs_json = tilePairClient(stack,
+        tile_pairs_json = tilePairClient(stack=stack,
                                          minz=z,
                                          maxz=z,
                                          render=render)

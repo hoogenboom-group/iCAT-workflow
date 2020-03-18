@@ -17,6 +17,15 @@ __all__ = ['plot_tile_map']
 
 
 def plot_tile_map(stacks, render):
+    """Plots tiles (as matplotlib patches) in `render-ws`
+
+    Parameters
+    ----------
+    stacks : list
+        List of stacks to plot
+    render : `renderapi.render.RenderClient`
+        `render-ws` instance
+    """
 
     # Create stacks DataFrame
     df_stacks = create_stacks_DataFrame(stacks=stacks,

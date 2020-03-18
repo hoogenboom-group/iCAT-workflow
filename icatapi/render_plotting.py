@@ -1,3 +1,4 @@
+from tqdm.notebook import tqdm
 import numpy as np
 import pandas as pd
 from seaborn import color_palette
@@ -34,7 +35,7 @@ def plot_tile_map(stacks, render):
                                  color_palette(n_colors=len(stacks_2_plot)))}
 
     # Iterate through layers
-    for sectionId, layer in df_stacks.groupby('sectionId'):
+    for sectionId, layer in tqdm(df_stacks.groupby('sectionId')):
         # Collect all tiles in each layer to determine bounds
         boxes = []
         # Set axis

@@ -13,12 +13,42 @@ __all__ = ['get_transform_metadata',
 
 
 def get_transform_metadata(filepath):
-    """Parse Odemis (single-page) tiff file for transformation data
+    """Parse Odemis tif file for transform data
 
     Parameters
     ----------
     filepath : `Path`
         Path to image file
+
+    Returns
+    -------
+    tform_md : tuple
+        All the relevant Odemis transform data
+        * pixelsize     | pixel size in x, y [m]
+        * rotation      | rotation angle [rad]
+        * shear         | shear [?]
+        * translation   | stage-based translation in x, y [m]
+    """
+    # Gather metadata as `Soup`
+    tif = TiffFile(filepath.as_posix())
+    xml_data = tif.pages[0].image_description
+    metadata = Soup(xml_data, 'lxml')
+
+    # Parse the transform metadata for each image in tif
+    tform_md = {}
+    for md in metadata.find_all('image'):
+        if md['name'] != 'Composited image preview':
+            tform_md[md['name']] = parse_transform_metadata(md)
+    return tform_md
+
+
+def parse_transform_metadata(metadata):
+    """Parse Odemis metadata for transform data
+
+    Parameters
+    ----------
+    metadata : `Soup`
+        Odemis metadata in a warm bowl of soup
 
     Returns
     -------
@@ -31,19 +61,14 @@ def get_transform_metadata(filepath):
     translation : tuple
         Stage-based translation in x, y [m]
     """
-    # Gather metadata as `Soup`
-    tif = TiffFile(filepath.as_posix())
-    metadata = tif.pages[0].image_description
-    soup = Soup(metadata, 'lxml')
-
     # Calculate pixel size in x & y
-    md = soup.pixels
+    md = metadata.pixels
     psx = 1e-6 * float(md['physicalsizex'])  # um --> m
     psy = 1e-6 * float(md['physicalsizey'])  # um --> m
     pixelsize = (psx, psy)
 
     # Parse out rotation matrix
-    md = soup.transform
+    md = metadata.transform
     A00 = float(md['a00'])  # /         \
     A01 = float(md['a01'])  # | a00  a01 |
     A10 = float(md['a10'])  # | a10  a11 |
@@ -61,7 +86,7 @@ def get_transform_metadata(filepath):
     shear = S[0, 1] / S[0, 0]
 
     # Translation
-    md = soup.plane
+    md = metadata.plane
     x0 = float(md['positionx'])
     y0 = float(md['positiony'])
     translation = (x0, y0)

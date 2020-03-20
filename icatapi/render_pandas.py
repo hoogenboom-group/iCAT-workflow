@@ -10,7 +10,8 @@ from renderapi.client import import_tilespecs
 
 __all__ = ['create_stack_DataFrame',
            'create_stacks_DataFrame',
-           'create_project_DataFrame']
+           'create_project_DataFrame',
+           'create_stack_from_DataFrame']
 
 
 def create_stack_DataFrame(stack, render):

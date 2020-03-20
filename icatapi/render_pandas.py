@@ -2,8 +2,10 @@ import numpy as np
 import pandas as pd
 
 from renderapi.render import get_stacks_by_owner_project
-from renderapi.tilespec import get_tile_specs_from_stack
+from renderapi.tilespec import TileSpec, get_tile_specs_from_stack
 from renderapi.transform import AffineModel as AffineRender
+from renderapi.stack import create_stack, set_stack_state
+from renderapi.client import import_tilespecs
 
 
 __all__ = ['create_stack_DataFrame',
@@ -98,3 +100,46 @@ def create_project_DataFrame(render):
     stacks = get_stacks_by_owner_project(render=render)
     df_project = create_stacks_DataFrame(stacks, render=render)
     return df_project
+
+
+def create_stack_from_DataFrame(df, render):
+    """Creates a `render-ws` stack from given DataFrame
+
+    Parameters
+    ----------
+    df : `pd.DataFrame`
+        DataFrame of tile data
+    render : `renderapi.render.RenderClient`
+        `render-ws` instance
+    """
+    # Set stack name
+    stack = df.iloc[0]['stack']
+
+    # Loop through tiles
+    tile_specs = []
+    for i, tile in df.iterrows():
+        # Create `TileSpec`s
+        ts = TileSpec(**tile.to_dict())
+        # Adjust tile specifications
+        if ('minIntensity' in tile.keys()) and\
+           ('maxIntensity' in tile.keys()):
+            ts['minint'] = int(tile['minIntensity'])
+            ts['maxint'] = int(tile['maxIntensity'])
+        if 'transforms' in tile.keys():
+            ts['tforms'] = tile['transforms']
+        # Collect `TileSpec`s
+        tile_specs.append(ts)
+
+    # Create stack
+    create_stack(stack=stack,
+                 render=render)
+
+    # Import TileSpecs to render
+    import_tilespecs(stack=stack,
+                     tilespecs=tile_specs,
+                     render=render)
+
+    # Close stack
+    set_stack_state(stack=stack,
+                    state='COMPLETE',
+                    render=render)

@@ -76,7 +76,7 @@ def plot_tile_map(stacks, render):
                 # Label first tile in tileset
                 x, y = np.array(b.centroid.xy).ravel()
                 s = f"{stack}\n{sectionId}\n"\
-                    f"{tile['imageCol']:02d}x{tile['imageRow']:02d}"
+                    f"{tile['imageCol']:02.0f}x{tile['imageRow']:02.0f}"
                 if i == 0: ax.text(x, y, s, ha='center', va='center')
 
         # Axis aesthetics

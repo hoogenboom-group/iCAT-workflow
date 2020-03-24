@@ -124,10 +124,10 @@ def create_stack_from_DataFrame(df, render):
         # Adjust tile specifications
         if ('minIntensity' in tile.keys()) and\
            ('maxIntensity' in tile.keys()):
-            ts['minint'] = int(tile['minIntensity'])
-            ts['maxint'] = int(tile['maxIntensity'])
+            ts.minint = int(tile['minIntensity'])
+            ts.maxint = int(tile['maxIntensity'])
         if 'transforms' in tile.keys():
-            ts['tforms'] = tile['transforms']
+            ts.tforms = tile['transforms']
         # Collect `TileSpec`s
         tile_specs.append(ts)
 

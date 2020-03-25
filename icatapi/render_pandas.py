@@ -103,7 +103,7 @@ def create_project_DataFrame(render):
     return df_project
 
 
-def create_stack_from_DataFrame(df, render):
+def create_stack_from_DataFrame(df, render, name=None):
     """Creates a `render-ws` stack from given DataFrame
 
     Parameters
@@ -112,9 +112,15 @@ def create_stack_from_DataFrame(df, render):
         DataFrame of tile data
     render : `renderapi.render.RenderClient`
         `render-ws` instance
+    name : str
+        Name of stack
+        Looks for 'stack' column in `df` if not provided
     """
     # Set stack name
-    stack = df.iloc[0]['stack']
+    if name is None:
+        stack = df.iloc[0]['stack']
+    else:
+        stack = name
 
     # Loop through tiles
     tile_specs = []

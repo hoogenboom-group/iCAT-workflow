@@ -153,8 +153,10 @@ def compute_relative_transform_from_filepaths(fp_EM, fp_FM):
         Relative affine transformation
     """
     # Parse transform data
-    (psx_EM, psy_EM), ro_EM, sh_EM, (trx_EM, try_EM) = get_transform_metadata(fp_EM)
-    (psx_FM, psy_FM), ro_FM, sh_FM, (trx_FM, try_FM) = get_transform_metadata(fp_FM)
+    tform_md_EM = list(get_transform_metadata(fp_EM).values())[0]
+    tform_md_FM = list(get_transform_metadata(fp_FM).values())[0]
+    (psx_EM, psy_EM), ro_EM, sh_EM, (trx_EM, try_EM) = tform_md_EM
+    (psx_FM, psy_FM), ro_FM, sh_FM, (trx_FM, try_FM) = tform_md_FM
 
     # Pass transform data to `compute_relative_transform`
     A = compute_relative_transform(psx_EM, psy_EM,

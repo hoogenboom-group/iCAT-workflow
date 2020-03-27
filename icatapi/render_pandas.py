@@ -29,33 +29,34 @@ def create_stack_DataFrame(stack, render):
     df_stack : `pd.DataFrame`
         DataFrame of all `TileSpec`s from given stack
     """
-    # Gather tile specifications from specified stack
-    tile_specs = get_tile_specs_from_stack(stack=stack,
-                                           render=render)
+    # Loop through tile specifications
+    tile_specs = []
+    for ts in get_tile_specs_from_stack(stack=stack,
+                                        render=render):
+        # Convert to dict
+        tile = ts.to_dict()
+        # Adjust certain specifications
+        tile['minint'] = ts.minint
+        tile['maxint'] = ts.maxint
+        tile['imageUrl'] = ts.ip[0].imageUrl
+        tile['tforms'] = ts.tforms
+        # Remove bad keys
+        tile.pop('minIntensity', None)
+        tile.pop('maxIntensity', None)
+        tile.pop('mipmapLevels', None)
+        tile.pop('transforms', None)
+        # Append to collection
+        tile_specs.append(tile)
+
     # Create DataFrame from tile specifications
-    df_stack = pd.DataFrame([ts.to_dict() for ts in tile_specs])
-    # Add stack to DataFrame
+    df_stack = pd.DataFrame(tile_specs)
+    # Add stack name to DataFrame
     df_stack['stack'] = stack
 
     # Expand `layout` column
     if 'layout' in df_stack.columns:
         df_stack = pd.concat([df_stack.drop('layout', axis=1),
                               df_stack['layout'].apply(pd.Series)], axis=1)
-
-    # Collapse `mipmapLevels` column to get `imageUrl`
-    if 'mipmapLevels' in df_stack.columns:
-        df_stack = pd.concat([df_stack.drop('mipmapLevels', axis=1),
-                              df_stack['mipmapLevels'].apply(pd.Series)['0']\
-                                                      .apply(pd.Series)], axis=1)
-
-    # Collapse `transforms` column and create list of `AffineRender` transforms
-    if 'transforms' in df_stack.columns:
-        df_stack = pd.concat([df_stack.drop('transforms', axis=1),
-                              df_stack['transforms'].apply(
-                                  lambda x: [AffineRender(*np.array(
-                                  x['specList'][i]['dataString'].split(
-                                  ' '), dtype=np.float))\
-                                  for i in range(len(x['specList']))])], axis=1)
 
     return df_stack
 

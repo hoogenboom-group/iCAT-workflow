@@ -128,13 +128,9 @@ def create_stack_from_DataFrame(df, render, name=None):
     for i, tile in df.iterrows():
         # Create `TileSpec`s
         ts = TileSpec(**tile.to_dict())
-        # Adjust tile specifications
-        if ('minIntensity' in tile.keys()) and\
-           ('maxIntensity' in tile.keys()):
-            ts.minint = int(tile['minIntensity'])
-            ts.maxint = int(tile['maxIntensity'])
-        if 'transforms' in tile.keys():
-            ts.tforms = tile['transforms']
+        # Ensure integer min, max intensity
+        ts.minint = int(tile['minint'])
+        ts.maxint = int(tile['maxint'])
         # Collect `TileSpec`s
         tile_specs.append(ts)
 

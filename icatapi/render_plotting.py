@@ -61,7 +61,7 @@ def plot_tile_map(stacks, render):
                 # Create `shapely.box` resembling raw image tile
                 b = box(0, 0, tile['width'], tile['height'])
                 # Apply transforms to `shapely.box`
-                for tform in tile['transforms']:
+                for tform in tile['tforms']:
                     A = (tform.M[:2, :2].ravel().tolist() +
                          tform.M[:2,  2].ravel().tolist())
                     b = affinity.affine_transform(b, A)

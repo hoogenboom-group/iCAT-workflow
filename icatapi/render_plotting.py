@@ -1,19 +1,23 @@
 from tqdm.notebook import tqdm
 import numpy as np
 import pandas as pd
+from skimage.io import imread
 from seaborn import color_palette
 from shapely.geometry import box
 from shapely import affinity
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 
-from skimage.io import imread
+from renderapi.stack import get_stack_bounds, get_z_values_for_stack
 from renderapi.image import get_bb_image
 
 from .render_pandas import create_stacks_DataFrame
 
 
-__all__ = ['plot_tile_map']
+__all__ = ['plot_tile_map',
+           'render_tileset_image',
+           'render_stack_images',
+           'render_layer_images']
 
 
 def plot_tile_map(stacks, render):
@@ -92,8 +96,89 @@ def plot_tile_map(stacks, render):
         ax.set_aspect('equal')
 
 
-def render_tileset_image(stack, z, render):
+def render_tileset_image(stack, z, render, width=1024):
+    """Renders an image of a tileset
+
+    Parameters
+    ----------
+    stacks : str
+        Stack with which to render the tileset image
+    z : float
+        Z value of stack at which to render tileset image
+    render : `renderapi.render.RenderClient`
+        `render-ws` instance
+    width : float
+        Width of rendered tileset image in pixels
+    
+    Returns
+    -------
+    image : ndarray
+        Rendered image of the specified tileset
     """
+    # Get stack bounds
+    bounds = get_stack_bounds(stack=stack,
+                              render=render)
+    x = bounds['minX']
+    y = bounds['minY']
+    width_ = bounds['maxX'] - bounds['minX']
+    height = bounds['maxY'] - bounds['minY']
+    scale = width / width_
+    # Render image
+    image = get_bb_image(stack=stack,
+                         z=z,
+                         x=x,
+                         y=y,
+                         width=width_,
+                         height=height,
+                         scale=scale,
+                         render=render)
+    return image
+
+
+def render_stack_images(stack, render, width=1024):
+    """Renders tileset images for a given stack
+
+    Parameters
+    ----------
+    stack : str
+        Stack with which to render images for all z values
+    render : `renderapi.render.RenderClient`
+        `render-ws` instance
+    width : float
+        Width of rendered tileset image in pixels
+    
+    Returns
+    -------
+    images : list
+        List of tileset images comprising the stack
+    """
+    # Get z values for stack
+    z_values = get_z_values_for_stack(stack=stack,
+                                      render=render)
+    # Loop through z values and collect images
+    images = []
+    for z in tqdm(z_values):
+        image = render_tileset_image(stack=stack,
+                                     z=z,
+                                     render=render,
+                                     width=width)
+        images.append(image)
+    return images
+
+
+def render_layer_images(stacks, z, render, width=1024):
+    """Renders tileset images for a given layer
+
+    Parameters
+    ----------
+    stacks : list
+        List of stacks to with which to render layer images
+    z : float
+        Z value of stacks at which to render layer images
+    render : `renderapi.render.RenderClient`
+        `render-ws` instance
+    width : float
+        Width of rendered layer images in pixels
     """
     pass
 

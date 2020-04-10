@@ -8,7 +8,8 @@ from renderapi.stack import get_z_values_for_stack
 __all__ = ['get_tile_pairs_4_alignment']
 
 
-def get_tile_pairs_4_alignment(stack, render, zNeighborDistance=1):
+def get_tile_pairs_4_alignment(stack, render, excludeSameLayerNeighbors=False,
+                               zNeighborDistance=1):
     """Collect tile pairs across multiple sections for alignment
 
     Parameters
@@ -33,7 +34,7 @@ def get_tile_pairs_4_alignment(stack, render, zNeighborDistance=1):
     tile_pairs_json = tilePairClient(stack=stack,
                                      minz=min(z_values),
                                      maxz=max(z_values),
-                                     excludeSameLayerNeighbors=True,
+                                     excludeSameLayerNeighbors=excludeSameLayerNeighbors,
                                      zNeighborDistance=zNeighborDistance,
                                      render=render)
 

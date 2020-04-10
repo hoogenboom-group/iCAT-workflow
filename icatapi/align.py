@@ -39,6 +39,6 @@ def get_tile_pairs_4_alignment(stack, render, excludeSameLayerNeighbors=False,
                                      render=render)
 
     # Create DataFrame from json
-    df_pairs = pd.io.json.json_normalize(tile_pairs_json['neighborPairs'])
+    df_pairs = pd.json_normalize(tile_pairs_json['neighborPairs'])
     df_pairs['stack'] = stack
     return df_pairs

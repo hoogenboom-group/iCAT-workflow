@@ -156,13 +156,13 @@ def render_stack_images(stack, render, width=1024):
     z_values = get_z_values_for_stack(stack=stack,
                                       render=render)
     # Loop through z values and collect images
-    images = []
-    for z in tqdm(z_values):
+    images = {}
+    for z in tqdm(z_values, leave=False):
         image = render_tileset_image(stack=stack,
                                      z=z,
                                      render=render,
                                      width=width)
-        images.append(image)
+        images[z] = image
     return images
 
 
@@ -180,7 +180,15 @@ def render_layer_images(stacks, z, render, width=1024):
     width : float
         Width of rendered layer images in pixels
     """
-    pass
+    # Loop through stacks and collect images
+    images = {}
+    for stack in tqdm(stacks, leave=False):
+        image = render_tileset_image(stack=stack,
+                                     z=z,
+                                     render=render,
+                                     width=width)
+        images[stack] = image
+    return images
 
 
 def render_tile_with_neighbors(stack, tileId, render):

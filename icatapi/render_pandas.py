@@ -104,7 +104,10 @@ def create_project_DataFrame(render):
     return df_project
 
 
-def create_stack_from_DataFrame(df, render, name=None):
+def create_stack_from_DataFrame(df, render, name=None,
+                                stackResolutionX=None,
+                                stackResolutionY=None,
+                                stackResolutionZ=None):
     """Creates a `render-ws` stack from given DataFrame
 
     Parameters
@@ -136,6 +139,9 @@ def create_stack_from_DataFrame(df, render, name=None):
 
     # Create stack
     create_stack(stack=stack,
+                 stackResolutionX=stackResolutionX,
+                 stackResolutionY=stackResolutionY,
+                 stackResolutionZ=stackResolutionZ,
                  render=render)
 
     # Import TileSpecs to render

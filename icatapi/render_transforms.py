@@ -48,8 +48,7 @@ def scale_stack(stack_in, stack_out=None, sx=1.0, sy=1.0,
 
     # Add scale transform to DataFrame
     for i, tile in df_stack.iterrows():
-        tforms = tile['tforms']
-        df_stack.at[i, 'tforms'] = tforms.append(A)
+        df_stack.at[i, 'tforms'] += [A]
 
     # Set output stack name
     stack_out = stack_out if stack_out is not None else stack_in
@@ -85,8 +84,7 @@ def rotate_stack(stack_in, stack_out=None, r=0,
 
     # Add rotation transform to DataFrame
     for i, tile in df_stack.iterrows():
-        tforms = tile['tforms']
-        df_stack.at[i, 'tforms'] = tforms.append(A)
+        df_stack.at[i, 'tforms'] += [A]
 
     # Set output stack name
     stack_out = stack_out if stack_out is not None else stack_in
@@ -124,8 +122,7 @@ def translate_stack(stack_in, stack_out=None, tx=0.0, ty=0.0,
 
     # Add translation transform to DataFrame
     for i, tile in df_stack.iterrows():
-        tforms = tile['tforms']
-        df_stack.at[i, 'tforms'] = tforms.append(A)
+        df_stack.at[i, 'tforms'] += [A]
 
     # Set output stack name
     stack_out = stack_out if stack_out is not None else stack_in
@@ -167,8 +164,7 @@ def transform_stack(stack_in, stack_out=None, T=None,
 
     # Add scale transform to DataFrame
     for i, tile in df_stack.iterrows():
-        tforms = tile['tforms']
-        df_stack.at[i, 'tforms'] = tforms.append(A)
+        df_stack.at[i, 'tforms'] += [A]
 
     # Set output stack name
     stack_out = stack_out if stack_out is not None else stack_in

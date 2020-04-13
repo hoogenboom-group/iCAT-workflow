@@ -70,21 +70,25 @@ def parse_transform_metadata(metadata):
 
     # Parse out rotation matrix
     md = metadata.transform
-    A00 = float(md['a00'])  # /         \
-    A01 = float(md['a01'])  # | a00  a01 |
-    A10 = float(md['a10'])  # | a10  a11 |
-    A11 = float(md['a11'])  # \         /
-    # QR decomposition into Rotation and Scale matrices
-    A = np.array([[A00, A10],
-                  [A01, A11]])
-    R, S = np.linalg.qr(A)
-    mask = np.diag(S) < 0.
-    R[:, mask] *= -1.
-    S[mask, :] *= -1.
-    # Calculate rotation angle and shear
-    rotation = np.arctan2(R[1, 0], R[0, 0])
-    rotation %= (2*np.pi)  # Odemis convention
-    shear = S[0, 1] / S[0, 0]
+    if md is not None:
+        A00 = float(md['a00'])  # /         \
+        A01 = float(md['a01'])  # | a00  a01 |
+        A10 = float(md['a10'])  # | a10  a11 |
+        A11 = float(md['a11'])  # \         /
+        # QR decomposition into Rotation and Scale matrices
+        A = np.array([[A00, A10],
+                    [A01, A11]])
+        R, S = np.linalg.qr(A)
+        mask = np.diag(S) < 0.
+        R[:, mask] *= -1.
+        S[mask, :] *= -1.
+        # Calculate rotation angle and shear
+        rotation = np.arctan2(R[1, 0], R[0, 0])
+        rotation %= (2*np.pi)  # Odemis convention
+        shear = S[0, 1] / S[0, 0]
+    else:
+        rotation = 0
+        shear = 0
 
     # Translation
     md = metadata.plane

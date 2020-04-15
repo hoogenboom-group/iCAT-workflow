@@ -42,7 +42,7 @@ def get_tile_pairs_4_montage(stack, render):
                                          maxz=z,
                                          render=render)
         # Create DataFrame from json
-        df = pd.io.json.json_normalize(tile_pairs_json['neighborPairs'])
+        df = pd.json_normalize(tile_pairs_json['neighborPairs'])
         df['z'] = z
         df_pairs = df_pairs.append(df, sort=False)
 

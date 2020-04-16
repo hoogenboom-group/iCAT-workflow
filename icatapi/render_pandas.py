@@ -127,7 +127,7 @@ def create_stack_from_DataFrame(df, render, name=None,
         stack = name
 
     # Loop through tiles
-    out = "Creating tile specifications..."
+    out = f"Creating tile specifications for \033[1m{stack}\033[0m..."
     print(out)
     tile_specs = []
     for i, tile in df.iterrows():
@@ -140,7 +140,6 @@ def create_stack_from_DataFrame(df, render, name=None,
         tile_specs.append(ts)
 
     # Create stack
-    out = f"Creating stack '{stack}'..."
     print(out)
     create_stack(stack=stack,
                  stackResolutionX=stackResolutionX,
@@ -149,7 +148,7 @@ def create_stack_from_DataFrame(df, render, name=None,
                  render=render)
 
     # Import TileSpecs to render
-    out = "Importing tile specifications..."
+    out = f"Importing tile specifications to \033[1m{stack}\033[0m..."
     print(out)
     import_tilespecs(stack=stack,
                      tilespecs=tile_specs,
@@ -159,5 +158,5 @@ def create_stack_from_DataFrame(df, render, name=None,
     set_stack_state(stack=stack,
                     state='COMPLETE',
                     render=render)
-    out = f"Stack '{stack}' created successfully"
+    out = f"Stack \033[1m{stack}\033[0m created successfully."
     print(out)

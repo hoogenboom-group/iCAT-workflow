@@ -96,7 +96,8 @@ def plot_tile_map(stacks, render):
         ax.set_aspect('equal')
 
 
-def render_tileset_image(stack, z, render, width=1024):
+def render_tileset_image(stack, z, render, width=1024,
+                         maxTileSpecsToRender=None):
     """Renders an image of a tileset
 
     Parameters
@@ -131,6 +132,7 @@ def render_tileset_image(stack, z, render, width=1024):
                          width=width_,
                          height=height,
                          scale=scale,
+                         maxTileSpecsToRender=maxTileSpecsToRender,
                          render=render)
     return image
 

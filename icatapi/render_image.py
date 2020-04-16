@@ -281,20 +281,21 @@ def plot_tile_map(stacks, render=None):
         ax.set_aspect('equal')
 
 
-def plot_stacks(stacks, width=1024, render=None,
+def plot_stacks(stacks, z_values=None, width=1024, render=None,
                 **renderapi_kwargs):
-    """"""
-    # Specify stacks and sections
+    """Renders and plots tileset images for the given stacks"""
+    # Create DataFrame from stacks
     df_stacks = create_stacks_DataFrame(stacks=stacks,
                                         render=render)
-    sectionIds = df_stacks['sectionId'].unique().tolist()
+    if z_values is None:
+        z_values = df_stacks['z'].unique().tolist()
 
     # Set up figure
     nrows = len(stacks)
-    ncols = len(sectionIds)
+    ncols = len(z_values)
     fig, axes = plt.subplots(nrows, ncols, squeeze=False,
                              figsize=(8*ncols, 8*nrows))
-    axmap = {k: v for k, v in zip(product(stacks, sectionIds), axes.flat)}
+    axmap = {k: v for k, v in zip(product(stacks, z_values), axes.flat)}
 
     # Iterate through tilesets
     for (stack, z), tileset in tqdm(df_stacks.groupby(['stack', 'z'])):
@@ -313,11 +314,11 @@ def plot_stacks(stacks, width=1024, render=None,
         extent = [bounds[k] for k in ['minX', 'maxX', 'minY', 'maxY']]
 
         # Plot image
-        sectionId = tileset['sectionId'].iloc[0]
-        ax = axmap[(stack, sectionId)]
+        ax = axmap[(stack, z)]
         ax.imshow(image, origin='lower', extent=extent)
         # Axis aesthetics
         ax.invert_yaxis()
-        ax.set_title(f"{stack}\n{sectionId}")
+        sectionId = tileset['sectionId'].iloc[0]
+        ax.set_title(f"{stack}\n{z} | {sectionId}")
         ax.set_xlabel('X [px]')
         ax.set_ylabel('Y [px]')

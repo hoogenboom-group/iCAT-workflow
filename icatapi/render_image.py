@@ -299,7 +299,8 @@ def plot_stacks(stacks, z_values=None, width=1024, render=None,
     axmap = {k: v for k, v in zip(product(stacks, z_values), axes.flat)}
 
     # Iterate through tilesets
-    for (stack, z), tileset in tqdm(df_stacks.groupby(['stack', 'z'])):
+    df_2_plot = df_stacks.loc[df_stacks['z'].isin(z_values)]
+    for (stack, z), tileset in tqdm(df_2_plot.groupby(['stack', 'z'])):
 
         # Render tileset image
         image = render_tileset_image(stack=stack,

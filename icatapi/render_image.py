@@ -1,4 +1,5 @@
 import warnings
+from itertools import product
 from tqdm.notebook import tqdm
 import numpy as np
 import pandas as pd
@@ -278,3 +279,45 @@ def plot_tile_map(stacks, render=None):
         ax.set_ylim(bounds[:, 1].min(), bounds[:, 1].max())
         ax.invert_yaxis()
         ax.set_aspect('equal')
+
+
+def plot_stacks(stacks, width=1024, render=None,
+                **renderapi_kwargs):
+    """"""
+    # Specify stacks and sections
+    df_stacks = create_stacks_DataFrame(stacks=stacks,
+                                        render=render)
+    sectionIds = df_stacks['sectionId'].unique().tolist()
+
+    # Set up figure
+    nrows = len(stacks)
+    ncols = len(sectionIds)
+    fig, axes = plt.subplots(nrows, ncols, squeeze=False,
+                             figsize=(8*ncols, 8*nrows))
+    axmap = {k: v for k, v in zip(product(stacks, sectionIds), axes.flat)}
+
+    # Iterate through tilesets
+    for (stack, z), tileset in tqdm(df_stacks.groupby(['stack', 'z'])):
+
+        # Render tileset image
+        image = render_tileset_image(stack=stack,
+                                     z=z,
+                                     width=width,
+                                     render=render,
+                                     **renderapi_kwargs)
+
+        # Get extent of tileset image in render-space
+        bounds = get_bounds_from_z(stack=stack,
+                                   z=z,
+                                   render=render)
+        extent = [bounds[k] for k in ['minX', 'maxX', 'minY', 'maxY']]
+
+        # Plot image
+        sectionId = tileset['sectionId'].iloc[0]
+        ax = axmap[(stack, sectionId)]
+        ax.imshow(image, origin='lower', extent=extent)
+        # Axis aesthetics
+        ax.invert_yaxis()
+        ax.set_title(f"{stack}\n{sectionId}")
+        ax.set_xlabel('X [px]')
+        ax.set_ylabel('Y [px]')

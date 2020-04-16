@@ -68,7 +68,6 @@ def render_bbox_image(stack, z, bbox, width=1024, render=None,
     # Render image bounding box image as tif
     image = get_bb_image(stack=stack, z=z, x=x, y=y,
                          width=w, height=h, scale=s,
-                         img_format='tif',
                          render=render,
                          **renderapi_kwargs)
     # Sometimes it does not work
@@ -107,6 +106,7 @@ def render_tileset_image(stack, z, width=1024, render=None,
     """
     # Get bbox for z layer from stack bounds
     bounds = get_bounds_from_z(stack=stack,
+                               z=z,
                                render=render)
     bbox = [bounds[k] for k in ['minX', 'minY', 'maxX', 'maxY']]
     # Render bbox image
@@ -119,7 +119,8 @@ def render_tileset_image(stack, z, width=1024, render=None,
     return image
 
 
-def render_stack_images(stack, width=1024, render=None):
+def render_stack_images(stack, width=1024, render=None,
+                        **renderapi_kwargs):
     """Renders tileset images for a given stack
 
     Parameters
@@ -156,7 +157,8 @@ def render_stack_images(stack, width=1024, render=None):
     return images
 
 
-def render_layer_images(stacks, z, width=1024, render=None):
+def render_layer_images(stacks, z, width=1024, render=None,
+                        **renderapi_kwargs):
     """Renders tileset images for a given layer
 
     Parameters
@@ -175,8 +177,9 @@ def render_layer_images(stacks, z, width=1024, render=None):
     for stack in tqdm(stacks, leave=False):
         image = render_tileset_image(stack=stack,
                                      z=z,
+                                     width=width,
                                      render=render,
-                                     width=width)
+                                     **renderapi_kwargs)
         images[stack] = image
     return images
 

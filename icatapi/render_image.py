@@ -29,7 +29,8 @@ __all__ = ['render_bbox_image',
            'render_stack_images',
            'render_layer_images',
            'write_tif',
-           'plot_tile_map']
+           'plot_tile_map',
+           'plot_stacks']
 
 
 def render_bbox_image(stack, z, bbox, width=1024, render=None,

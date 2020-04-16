@@ -140,7 +140,6 @@ def create_stack_from_DataFrame(df, render, name=None,
         tile_specs.append(ts)
 
     # Create stack
-    print(out)
     create_stack(stack=stack,
                  stackResolutionX=stackResolutionX,
                  stackResolutionY=stackResolutionY,

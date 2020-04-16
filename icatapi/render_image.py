@@ -320,6 +320,6 @@ def plot_stacks(stacks, z_values=None, width=1024, render=None,
         # Axis aesthetics
         ax.invert_yaxis()
         sectionId = tileset['sectionId'].iloc[0]
-        ax.set_title(f"{stack}\n{z} | {sectionId}")
+        ax.set_title(f"{stack}\nz = {z:.0f} | {sectionId}")
         ax.set_xlabel('X [px]')
         ax.set_ylabel('Y [px]')

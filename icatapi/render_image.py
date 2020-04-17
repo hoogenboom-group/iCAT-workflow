@@ -227,16 +227,16 @@ def plot_tile_map(stacks, render=None):
 
     # Set up figure
     ncols = len(sections_2_plot)
-    fig, axes = plt.subplots(ncols=ncols, squeeze=False,
-                             figsize=(8*ncols, 8))
+    fig, axes = plt.subplots(ncols=ncols, sharex=True, sharey=True,
+                             squeeze=False, figsize=(8*ncols, 8))
     axmap = {k: v for k, v in zip(sections_2_plot, axes.flat)}
     cmap = {k: v for k, v in zip(stacks_2_plot,
                                  color_palette(n_colors=len(stacks_2_plot)))}
+    # Collect all tiles in each layer to determine bounds
+    boxes = []
 
     # Iterate through layers
     for sectionId, layer in tqdm(df_stacks.groupby('sectionId')):
-        # Collect all tiles in each layer to determine bounds
-        boxes = []
         # Set axis
         ax = axmap[sectionId]
         # Collect legend handles
@@ -274,12 +274,15 @@ def plot_tile_map(stacks, render=None):
         ax.legend(handles=handles, loc='lower right')
         ax.set_xlabel('X [px]')
         ax.set_ylabel('Y [px]')
-        # Determine bounds
-        bounds = np.swapaxes([b.exterior.xy for b in boxes], 1, 2).reshape(-1, 2)
+        ax.grid(ls=':', alpha=0.7)
+        ax.set_aspect('equal')
+
+    # Set axis limits based on bounding boxes
+    bounds = np.swapaxes([b.exterior.xy for b in boxes], 1, 2).reshape(-1, 2)
+    for ax in axmap.values():
         ax.set_xlim(bounds[:, 0].min(), bounds[:, 0].max())
         ax.set_ylim(bounds[:, 1].min(), bounds[:, 1].max())
         ax.invert_yaxis()
-        ax.set_aspect('equal')
 
 
 def plot_stacks(stacks, z_values=None, width=1024, render=None,
@@ -310,9 +313,8 @@ def plot_stacks(stacks, z_values=None, width=1024, render=None,
                                      **renderapi_kwargs)
 
         # Get extent of tileset image in render-space
-        bounds = get_bounds_from_z(stack=stack,
-                                   z=z,
-                                   render=render)
+        bounds = get_stack_bounds(stack=stack,
+                                  render=render)
         extent = [bounds[k] for k in ['minX', 'maxX', 'minY', 'maxY']]
 
         # Plot image

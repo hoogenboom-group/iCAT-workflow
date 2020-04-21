@@ -374,8 +374,8 @@ def plot_stacks(stacks, z_values=None, width=1024, render=None,
         ax.set_ylabel('Y [px]')
 
 
-def plot_neighborhoods(stacks, neighborhood=1, width=1024, render=None,
-                       **renderapi_kwargs):
+def plot_neighborhoods(stacks, z_values=None, neighborhood=1, width=1024,
+                       render=None, **renderapi_kwargs):
     """Renders and plots a neighborhood image around the given tile"""
     # Create DataFrame from stacks
     df_stacks = create_stacks_DataFrame(stacks=stacks,
@@ -389,7 +389,7 @@ def plot_neighborhoods(stacks, neighborhood=1, width=1024, render=None,
     nrows = len(stacks)
     ncols = len(z_values)
     fig, axes = plt.subplots(nrows, ncols, squeeze=False,
-                            figsize=(8*ncols, 8*nrows))
+                             figsize=(8*ncols, 8*nrows))
     axmap = {k: v for k, v in zip(product(stacks, z_values), axes.flat)}
 
     # Iterate through tilesets
@@ -401,12 +401,12 @@ def plot_neighborhoods(stacks, neighborhood=1, width=1024, render=None,
 
         # Render neighborhood image
         image, bbox = render_neighborhood_image(stack=stack,
-                                        tileId=tileId,
-                                        neighborhood=neighborhood,
-                                        width=width,
-                                        return_bbox=True,
-                                        render=render,
-                                        **renderapi_kwargs)
+                                                tileId=tileId,
+                                                neighborhood=neighborhood,
+                                                width=width,
+                                                return_bbox=True,
+                                                render=render,
+                                                **renderapi_kwargs)
 
         # Get extent of neighborhood image in render-space (L, R, B, T)
         extent = (bbox[0], bbox[2], bbox[1], bbox[3])

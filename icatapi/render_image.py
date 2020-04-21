@@ -18,6 +18,7 @@ from renderapi.render import format_preamble
 from renderapi.stack import (get_stack_bounds,
                              get_bounds_from_z,
                              get_z_values_for_stack)
+from renderapi.tilespec import get_tile_spec
 from renderapi.image import get_bb_image
 from renderapi.errors import RenderError
 
@@ -28,9 +29,11 @@ __all__ = ['render_bbox_image',
            'render_tileset_image',
            'render_stack_images',
            'render_layer_images',
+           'render_neighborhood_image',
            'write_tif',
            'plot_tile_map',
-           'plot_stacks']
+           'plot_stacks',
+           'plot_neighborhoods']
 
 
 def render_bbox_image(stack, z, bbox, width=1024, render=None,
@@ -186,15 +189,56 @@ def render_layer_images(stacks, z, width=1024, render=None,
     return images
 
 
-def render_tile_with_neighbors(stack, tileId, render=None):
+def render_neighborhood_image(stack, tileId, neighborhood=1, width=1024,
+                              render=None, return_bbox=False,
+                              **renderapi_kwargs):
+    """Renders an image of the local neighborhood surrounding a tile
+
+    Parameters
+    ----------
+    stack : str
+        Stack from which to render neighborhood image
+    tileId : str
+        tileId (duh)
+    neighborhood : float
+        Number of tiles surrounding center tile from which to render the image
+    width : float
+        Width of rendered layer images in pixels
+    render : `renderapi.render.RenderClient`
+        `render-ws` instance
     """
-    """
-    pass
+    # Make alias for neighborhood
+    N = neighborhood
+
+    # Get bounding box of specified tile
+    tile_spec = get_tile_spec(stack=stack,
+                              tile=tileId,
+                              render=render)
+
+    # Get width of bbox
+    bbox = tile_spec.bbox
+    w = bbox[2] - bbox[0]
+
+    # Assume surrounding tiles are squares with ~same width as the center tile
+    bbox_neighborhood = (bbox[0] - N*w, bbox[1] - N*w,
+                         bbox[2] + N*w, bbox[3] + N*w)
+
+    # Render image of neighborhood
+    image = render_bbox_image(stack=stack,
+                              z=tile_spec.z,
+                              bbox=bbox_neighborhood,
+                              width=width,
+                              render=render,
+                              **renderapi_kwargs)
+    
+    if return_bbox:
+        return image, bbox_neighborhood
+    else:
+        return image
 
 
 def write_tif(fp, image):
-    """
-    """
+    """Simple wrapper for skimage.external.tifffile.TiffWriter"""
     # Convert to grey scale 16-bit image
     with warnings.catch_warnings():      # Suppress precision
         warnings.simplefilter('ignore')  # loss warnings
@@ -291,6 +335,8 @@ def plot_stacks(stacks, z_values=None, width=1024, render=None,
     # Create DataFrame from stacks
     df_stacks = create_stacks_DataFrame(stacks=stacks,
                                         render=render)
+
+    # Plot all z values if none are provided
     if z_values is None:
         z_values = df_stacks['z'].unique().tolist()
 
@@ -324,5 +370,53 @@ def plot_stacks(stacks, z_values=None, width=1024, render=None,
         ax.invert_yaxis()
         sectionId = tileset['sectionId'].iloc[0]
         ax.set_title(f"{stack}\nz = {z:.0f} | {sectionId}")
+        ax.set_xlabel('X [px]')
+        ax.set_ylabel('Y [px]')
+
+
+def plot_neighborhoods(stacks, neighborhood=1, width=1024, render=None,
+                       **renderapi_kwargs):
+    """Renders and plots a neighborhood image around the given tile"""
+    # Create DataFrame from stacks
+    df_stacks = create_stacks_DataFrame(stacks=stacks,
+                                        render=render)
+
+    # Plot all z values if none are provided
+    if z_values is None:
+        z_values = df_stacks['z'].unique().tolist()
+
+    # Set up figure
+    nrows = len(stacks)
+    ncols = len(z_values)
+    fig, axes = plt.subplots(nrows, ncols, squeeze=False,
+                            figsize=(8*ncols, 8*nrows))
+    axmap = {k: v for k, v in zip(product(stacks, z_values), axes.flat)}
+
+    # Iterate through tilesets
+    df_2_plot = df_stacks.loc[df_stacks['z'].isin(z_values)]
+    for (stack, z), tileset in tqdm(df_2_plot.groupby(['stack', 'z'])):
+
+        # Select a tile from the tileset randomly
+        tileId = tileset.sample(1).iloc[0]['tileId']
+
+        # Render neighborhood image
+        image, bbox = render_neighborhood_image(stack=stack,
+                                        tileId=tileId,
+                                        neighborhood=neighborhood,
+                                        width=width,
+                                        return_bbox=True,
+                                        render=render,
+                                        **renderapi_kwargs)
+
+        # Get extent of neighborhood image in render-space (L, R, B, T)
+        extent = (bbox[0], bbox[2], bbox[1], bbox[3])
+
+        # Plot image
+        ax = axmap[(stack, z)]
+        ax.imshow(image, origin='lower', extent=extent)
+        # Axis aesthetics
+        ax.invert_yaxis()
+        sectionId = tileset['sectionId'].iloc[0]
+        ax.set_title(f"{stack}\nz = {z:.0f} | {sectionId}\n{tileId}")
         ax.set_xlabel('X [px]')
         ax.set_ylabel('Y [px]')

@@ -13,7 +13,8 @@ __all__ = ['get_tile_pairs_4_montage']
         #    'get_matches_within_section'
 
 
-def get_tile_pairs_4_montage(stack, render):
+def get_tile_pairs_4_montage(stack, render,
+                             **renderapi_kwargs):
     """Collect tile pairs from stack one section at a time for montaging
 
     Parameters
@@ -40,7 +41,8 @@ def get_tile_pairs_4_montage(stack, render):
         tile_pairs_json = tilePairClient(stack=stack,
                                          minz=z,
                                          maxz=z,
-                                         render=render)
+                                         render=render,
+                                         **renderapi_kwargs)
         # Create DataFrame from json
         df = pd.json_normalize(tile_pairs_json['neighborPairs'])
         df['z'] = z

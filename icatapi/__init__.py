@@ -1,10 +1,12 @@
-from .importo import *
-from .montage import *
 from .align import *
-from .overlay import *
 from .correlate import *
 from .exporto import *
+from .importo import *
+from .montage import *
+from .overlay import *
 
+from .render_image import *
 from .render_pandas import *
+from .render_transforms import *
 
 __version__ = '0.1.dev'

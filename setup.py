@@ -14,6 +14,7 @@ INSTALL_REQUIRES = [
     "numpy",
     "scipy",
     "scikit-image",
+    "shapely",
     "render-python",
 ]
 

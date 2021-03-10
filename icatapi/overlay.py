@@ -4,7 +4,7 @@ import re
 import numpy as np
 from bs4 import BeautifulSoup as Soup
 from matplotlib.transforms import Affine2D as AffineMPL
-from skimage.external.tifffile import TiffFile
+from tifffile import TiffFile
 
 
 __all__ = ['get_transform_metadata',
@@ -77,7 +77,7 @@ def parse_transform_metadata(metadata):
         A11 = float(md['a11'])  # \         /
         # QR decomposition into Rotation and Scale matrices
         A = np.array([[A00, A10],
-                    [A01, A11]])
+                      [A01, A11]])
         R, S = np.linalg.qr(A)
         mask = np.diag(S) < 0.
         R[:, mask] *= -1.

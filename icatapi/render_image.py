@@ -12,7 +12,7 @@ from matplotlib.patches import Polygon
 from skimage import img_as_uint
 from skimage.color import rgb2grey
 from skimage.io import imread
-from skimage.external.tifffile import TiffWriter
+from tifffile import TiffWriter
 
 from renderapi.render import format_preamble
 from renderapi.stack import (get_stack_bounds,
@@ -238,7 +238,7 @@ def render_neighborhood_image(stack, tileId, neighborhood=1, width=1024,
 
 
 def write_tif(fp, image):
-    """Simple wrapper for skimage.external.tifffile.TiffWriter"""
+    """Simple wrapper for tifffile.TiffWriter"""
     # Convert to grey scale 16-bit image
     with warnings.catch_warnings():      # Suppress precision
         warnings.simplefilter('ignore')  # loss warnings

@@ -4,7 +4,7 @@ import re
 import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup as Soup
-from skimage.external.tifffile import TiffFile
+from tifffile import TiffFile
 
 
 __all__ = ['parse_metadata']

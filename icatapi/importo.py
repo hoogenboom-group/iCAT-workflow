@@ -29,7 +29,7 @@ def parse_metadata(filepath, section):
     # Read metadata
     # -------------
     tif = TiffFile(filepath.as_posix())
-    metadata = tif.pages[0].image_description
+    metadata = tif.pages[0].description
     soup = Soup(metadata, 'lxml')
     tile_dict = {}
 

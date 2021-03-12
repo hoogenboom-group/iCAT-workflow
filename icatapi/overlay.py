@@ -32,7 +32,7 @@ def get_transform_metadata(filepath):
     """
     # Gather metadata as `Soup`
     tif = TiffFile(filepath.as_posix())
-    xml_data = tif.pages[0].image_description
+    xml_data = tif.pages[0].description
     metadata = Soup(xml_data, 'lxml')
 
     # Parse the transform metadata for each image in tif

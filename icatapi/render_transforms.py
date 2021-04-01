@@ -78,7 +78,7 @@ def rotate_stack(stack_in, stack_out=None, r=0,
                                       render=render)
 
     # Create scaling transform
-    T = AffineMPL().rotate(ro)
+    T = AffineMPL().rotate(r)
     A = AffineRender()
     A.M = T.get_matrix()
 

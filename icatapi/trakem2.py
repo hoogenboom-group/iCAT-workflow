@@ -1,6 +1,6 @@
 import random
+import re
 from textwrap import dedent
-
 from tqdm.notebook import tqdm
 
 from renderapi.stack import get_stack_bounds, get_z_values_for_stack
@@ -19,6 +19,9 @@ def create_patch(tile_spec):
     """Generate xml data for a given patch (tile)"""
     # Abbreviate tile specification
     ts = tile_spec
+    # Generate oid
+    x, y = [int(i) for i in re.findall('\d+', ts.tileId)[-2:]]
+    oid = f"{ts.z:.0f}{x:02d}{y:02d}"
     # Get total transform
     AT = AffineModel()
     for tform in ts.tforms:
@@ -26,7 +29,7 @@ def create_patch(tile_spec):
     # Create xml data for patch
     patch = f"""
             <t2_patch
-                oid="{123456789123456789}"
+                oid="{oid}"
                 width="{ts.width}"
                 height="{ts.height}"
                 transform="matrix({AT.M00},{AT.M01},{AT.M10},{AT.M11},{AT.B0},{AT.B1})"
@@ -50,7 +53,7 @@ def create_layer(stack, z, render):
     # Create xml header data for layer
     layer = f"""
         <t2_layer
-            oid="{12345678898945456}"
+            oid="{z}"
             thickness="1.0"
             z="{z}"
             title="layer_{z}"

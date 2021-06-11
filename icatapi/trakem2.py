@@ -55,8 +55,8 @@ def create_layer(stack, z, render):
         <t2_layer
             oid="{z}"
             thickness="1.0"
-            z="{z}"
-            title="layer_{z}"
+            z="{z:.0f}"
+            title="layer_{z:.0f}"
         >"""
     # Fetch tiles in layer
     tile_specs = get_tile_specs_from_z(stack=stack,
@@ -73,10 +73,11 @@ def create_layer(stack, z, render):
     return layer
 
 
-def create_stack(stack, render):
+def create_stack(stack, z_values=None, render=None):
     """Generate xml data for a given stack"""
     # Fetch z values for stack
-    z_values = get_z_values_for_stack(stack=stack, render=render)
+    if z_values is None:
+        z_values = get_z_values_for_stack(stack=stack, render=render)
     # Initialize stack xml data (empty string)
     stack_data = ""
     # Loop through z layers
@@ -87,6 +88,30 @@ def create_stack(stack, render):
                              render=render)
         stack_data += layer
     return stack_data
+
+
+def create_trakem2_project(stack, xml_filepath, z_values=None, render=None):
+    """Create TrakEM2 project xml file for a given stack"""
+    # Get TrakEM2 header
+    xml_header = create_header()
+    # Create project header
+    xml_project_header = create_project_header(xml_filepath)
+    # Create layer set
+    stack_bounds = get_stack_bounds(stack, render=render)
+    width, height = (stack_bounds['maxX'] - stack_bounds['minX'],
+                     stack_bounds['maxY'] - stack_bounds['minY'])
+    xml_layer_set = create_layer_set(width=width,
+                                     height=height)
+    # Create stack xml data
+    xml_stack = create_stack(stack, z_values, render)
+    # Create header
+    xml_footer = create_footer()
+    with xml_filepath.open('w', encoding='utf-8') as xml:
+        xml.write(xml_header)
+        xml.write(xml_project_header)
+        xml.write(xml_layer_set)
+        xml.write(xml_stack)
+        xml.write(xml_footer)
 
 
 def create_project_header(xml_filepath):
@@ -137,30 +162,6 @@ def create_layer_set(width=7000, height=7000):
         preload_ahead="0"
     >"""
     return layer_set
-
-
-def create_trakem2_project(stack, xml_filepath, render):
-    """Create TrakEM2 project xml file for a given stack"""
-    # Get TrakEM2 header
-    xml_header = create_header()
-    # Create project header
-    xml_project_header = create_project_header(xml_filepath)
-    # Create layer set
-    stack_bounds = get_stack_bounds(stack, render=render)
-    width, height = (stack_bounds['maxX'] - stack_bounds['minX'],
-                     stack_bounds['maxY'] - stack_bounds['minY'])
-    xml_layer_set = create_layer_set(width=width,
-                                     height=height)
-    # Create stack xml data
-    xml_stack = create_stack(stack, render=render)
-    # Create header
-    xml_footer = create_footer()
-    with xml_filepath.open('w', encoding='utf-8') as xml:
-        xml.write(xml_header)
-        xml.write(xml_project_header)
-        xml.write(xml_layer_set)
-        xml.write(xml_stack)
-        xml.write(xml_footer)
 
 
 def create_header():

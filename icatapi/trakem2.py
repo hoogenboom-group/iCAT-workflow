@@ -1,14 +1,13 @@
-import json
 import random
 from textwrap import dedent
-import numpy as np
 
 from renderapi.stack import get_stack_bounds, get_z_values_for_stack
+from renderapi.tilespec import get_tile_specs_from_z
 from renderapi.transform import AffineModel
 
 
 def get_random_ints(N):
-    """Generate a random integers of cardinality N"""
+    """Generate a random integer with cardinality N"""
     lower = 10**(N-1)
     upper = 10**N - 1
     return random.randint(lower,upper)
@@ -16,7 +15,7 @@ def get_random_ints(N):
 
 def create_patch(tile_spec):
     """Generate xml data for a given patch (tile)"""
-    # Get tile specification
+    # Abbreviate tile specification
     ts = tile_spec
     # Get total transform
     AT = AffineModel()
@@ -72,7 +71,7 @@ def create_layer(stack, z, render):
 def create_stack(stack, render):
     """Generate xml data for a given stack"""
     # Fetch z values for stack
-    z_values = renderapi.stack.get_z_values_for_stack(stack='lil_EM', render=render)
+    z_values = get_z_values_for_stack(stack=stack, render=render)
     # Initialize stack xml data (empty string)
     stack_data = ""
     # Loop through z layers
@@ -87,15 +86,15 @@ def create_stack(stack, render):
 
 def create_project_header(xml_filepath):
     """Generate project data for xml file"""
-    # Create long string of random numbers
+    # Create a long string of random numbers
     p1 = get_random_ints(13)
     p2 = get_random_ints(9)
     p3 = get_random_ints(10)
-    random_str = f"{p1}.{p2}.{p3}"
+    unuid = f"{p1}.{p2}.{p3}"
     # Project header data
     project_header = f"""\
-        unuid="{random_str}",
-        mipmaps_folder="{xml_filepath.parent.absolute().as_posix()}/trakem2.{random_str}/trakem2.mipmaps/"
+        unuid="{unuid}",
+        mipmaps_folder="{xml_filepath.parent.absolute().as_posix()}/trakem2.{unuid}/trakem2.mipmaps/"
         storage_folder="{xml_filepath.parent.absolute().as_posix()}/"
         mipmaps_format="4"
         image_resizing_mode="Area downsampling"

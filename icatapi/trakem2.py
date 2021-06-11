@@ -1,6 +1,8 @@
 import random
 from textwrap import dedent
 
+from tqdm.notebook import tqdm
+
 from renderapi.stack import get_stack_bounds, get_z_values_for_stack
 from renderapi.tilespec import get_tile_specs_from_z
 from renderapi.transform import AffineModel
@@ -23,23 +25,23 @@ def create_patch(tile_spec):
         AT = tform.concatenate(AT)
     # Create xml data for patch
     patch = f"""
-        <t2_patch
-            oid="{123456789123456789}"
-            width="{ts.width}"
-            height="{ts.height}"
-            transform="matrix({AT.M00},{AT.M01},{AT.M10},{AT.M11},{AT.B0},{AT.B1})"
-            links=""
-            type="1"
-            file_path="{ts.ip[0].imageUrl.split('://')[1]}"
-            title="{ts.tileId}"
-            style="fill-opacity:1.0;stroke:#ffff00;"
-            o_width="{ts.width}"
-            o_height="{ts.height}"
-            min="{ts.minint}"
-            max="{ts.maxint}"
-            mres="32"
-        >
-        </t2_patch>"""
+            <t2_patch
+                oid="{123456789123456789}"
+                width="{ts.width}"
+                height="{ts.height}"
+                transform="matrix({AT.M00},{AT.M01},{AT.M10},{AT.M11},{AT.B0},{AT.B1})"
+                links=""
+                type="1"
+                file_path="{ts.ip[0].imageUrl.split('://')[1]}"
+                title="{ts.tileId}"
+                style="fill-opacity:1.0;stroke:#ffff00;"
+                o_width="{ts.width}"
+                o_height="{ts.height}"
+                min="{ts.minint}"
+                max="{ts.maxint}"
+                mres="32"
+            >
+            </t2_patch>"""
     return patch
 
 
@@ -47,12 +49,12 @@ def create_layer(stack, z, render):
     """Generate xml data for a given z layer"""
     # Create xml header data for layer
     layer = f"""
-    <t2_layer
-        oid="{12345678898945456}"
-        thickness="1.0"
-        z="{z}"
-        title="layer_{z}"
-    >"""
+        <t2_layer
+            oid="{12345678898945456}"
+            thickness="1.0"
+            z="{z}"
+            title="layer_{z}"
+        >"""
     # Fetch tiles in layer
     tile_specs = get_tile_specs_from_z(stack=stack,
                                        z=z,
@@ -64,7 +66,7 @@ def create_layer(stack, z, render):
         layer += patch
     # Add layer footer
     layer += """
-    </t2_layer>"""
+        </t2_layer>"""
     return layer
 
 
@@ -75,7 +77,7 @@ def create_stack(stack, render):
     # Initialize stack xml data (empty string)
     stack_data = ""
     # Loop through z layers
-    for z in z_values:
+    for z in tqdm(z_values):
         # Add layer data to stack
         layer = create_layer(stack=stack,
                              z=z,
@@ -148,11 +150,14 @@ def create_trakem2_project(stack, xml_filepath, render):
                                      height=height)
     # Create stack xml data
     xml_stack = create_stack(stack, render=render)
+    # Create header
+    xml_footer = create_footer()
     with xml_filepath.open('w', encoding='utf-8') as xml:
         xml.write(xml_header)
         xml.write(xml_project_header)
         xml.write(xml_layer_set)
         xml.write(xml_stack)
+        xml.write(xml_footer)
 
 
 def create_header():
@@ -423,3 +428,12 @@ def create_header():
             title='Project'
     """)
     return header
+
+
+def create_footer():
+    """Generate footer for xml file"""
+    footer = dedent("""
+        </t2_layer_set>
+    </trakem2>
+    """)
+    return footer

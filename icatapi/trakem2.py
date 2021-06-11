@@ -32,14 +32,14 @@ def create_patch(tile_spec):
                 oid="{oid}"
                 width="{ts.width}"
                 height="{ts.height}"
-                transform="matrix({AT.M00},{AT.M01},{AT.M10},{AT.M11},{AT.B0},{AT.B1})"
+                transform="matrix({AT.M00},{AT.M10},{AT.M01},{AT.M11},{AT.B0},{AT.B1})"
                 links=""
                 type="1"
                 file_path="{ts.ip[0].imageUrl.split('://')[1]}"
                 title="{ts.tileId}"
                 style="fill-opacity:1.0;stroke:#ffff00;"
-                o_width="{ts.width}"
-                o_height="{ts.height}"
+                o_width="{ts.width:.0f}"
+                o_height="{ts.height:.0f}"
                 min="{ts.minint}"
                 max="{ts.maxint}"
                 mres="32"
@@ -53,9 +53,9 @@ def create_layer(stack, z, render):
     # Create xml header data for layer
     layer = f"""
         <t2_layer
-            oid="{z}"
+            oid="{z:.0f}"
             thickness="1.0"
-            z="{z:.0f}"
+            z="{z:.1f}"
             title="layer_{z:.0f}"
         >"""
     # Fetch tiles in layer
@@ -123,7 +123,7 @@ def create_project_header(xml_filepath):
     unuid = f"{p1}.{p2}.{p3}"
     # Project header data
     project_header = f"""\
-        unuid="{unuid}",
+        unuid="{unuid}"
         mipmaps_folder="{xml_filepath.parent.absolute().as_posix()}/trakem2.{unuid}/trakem2.mipmaps/"
         storage_folder="{xml_filepath.parent.absolute().as_posix()}/"
         mipmaps_format="4"
@@ -428,8 +428,8 @@ def create_header():
 
     <trakem2>
         <project 
-            id='0'
-            title='Project'
+            id="0"
+            title="Project"
     """)
     return header
 

@@ -14,5 +14,5 @@ $ (icat) jupyter nbextension enable --py widgetsnbextension
 
 2. Install iCAT-workflow from github repo
 ```
-$ (icat) pip install git+https://github.com/lanery/secdetect.git
+$ (icat) pip install git+https://github.com/lanery/iCAT-workflow.git
 ```

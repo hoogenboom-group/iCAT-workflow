@@ -15,6 +15,7 @@ INSTALL_REQUIRES = [
     "scipy",
     "pandas",
     "matplotlib",
+    "seaborn",
     "scikit-image",
     "shapely",
     "beautifulsoup4",

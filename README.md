@@ -6,7 +6,7 @@
 $ conda create -n icat jupyterlab shapely
 $ conda activate icat
 $ (icat) conda install -c conda-forge nodejs=15
-$ (icat) pip install tqdm ipympl ipywidgets
+$ (icat) pip install tqdm lxml ipympl ipywidgets
 $ (icat) jupyter labextension install @jupyter-widgets/jupyterlab-manager
 $ (icat) jupyter labextension install jupyter-matplotlib
 $ (icat) jupyter nbextension enable --py widgetsnbextension

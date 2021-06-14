@@ -17,7 +17,7 @@ INSTALL_REQUIRES = [
     "matplotlib",
     "scikit-image",
     "shapely",
-    "beautifulsoup4"
+    "beautifulsoup4",
     "render-python",
 ]
 

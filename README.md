@@ -14,5 +14,5 @@ $ (icat) jupyter nbextension enable --py widgetsnbextension
 
 2. Install iCAT-workflow from github repo
 ```
-$ (icat) pip install git+https://github.com/lanery/iCAT-workflow.git
+$ (icat) pip install git+git://github.com/lanery/iCAT-workflow/
 ```

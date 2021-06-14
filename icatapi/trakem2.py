@@ -6,7 +6,7 @@ from tqdm.notebook import tqdm
 
 from renderapi.stack import (get_stack_bounds, get_z_values_for_stack,
                              create_stack, set_stack_state)
-from renderapi.tilespec import TileSpec, get_tile_specs_from_z
+from renderapi.tilespec import TileSpec, Layout, get_tile_specs_from_z
 from renderapi.client import import_tilespecs
 from renderapi.transform import AffineModel
 
@@ -121,11 +121,13 @@ def import_trakem2_project(stack, xml_filepath, render):
     """Import render stack from TrakEM2 xml file"""
     # Soupify TrakEM2 xml file
     soup = Soup(xml_filepath.read_bytes(), 'lxml')
-    
+
     # Iterate through layers to collect tile specifications
     tile_specs = []
+    out = f"Creating tile specifications for \033[1m{stack}\033[0m..."
+    print(out)
     for layer in tqdm(soup.find_all('t2_layer')):
-        
+
         # Iterate through patches
         for patch in layer.find_all('t2_patch'):
 
@@ -133,20 +135,27 @@ def import_trakem2_project(stack, xml_filepath, render):
             d = patch.attrs
 
             # Parse transform data
-            tforms = []
-            for tform in patch.find_all('iict_transform'):
-                M00, M10, M01, M11, B0, B1 = [float(i) for i in re.findall(r'-?[\d.]+', tform['data'])]
-                A = AffineModel(M00, M01, M10, M11, B0, B1)
-                tforms.append(A)
+            M00, M10, M01, M11, B0, B1 = [float(i) for i in re.findall(
+                r'-?[\d.]+(?:e-?\d+)?', d['transform'])]
+            A = AffineModel(M00, M01, M10, M11, B0, B1)
+
+            # Define layout
+            z = float(layer.attrs['z'])
+            col, row = [int(i) for i in re.findall('\d+', d['title'])][-2:]
+            layout = Layout(sectionId=f'S{int(z):03d}',
+                            imageRow=row,
+                            imageCol=col)
+
             # Create tile specification
             ts = TileSpec(tileId=d['title'],
-                          z=layer.attrs['z'],
+                          z=z,
                           width=d['width'],
                           height=d['height'],
                           imageUrl=d['file_path'],
                           minint=d['min'],
                           maxint=d['max'],
-                          tforms=tforms)
+                          layout=layout,
+                          tforms=[A])
             # Collect tile specification
             tile_specs.append(ts)
 

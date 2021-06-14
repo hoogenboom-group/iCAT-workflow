@@ -1,10 +1,13 @@
 import random
 import re
 from textwrap import dedent
+from bs4 import BeautifulSoup as Soup
 from tqdm.notebook import tqdm
 
-from renderapi.stack import get_stack_bounds, get_z_values_for_stack
-from renderapi.tilespec import get_tile_specs_from_z
+from renderapi.stack import (get_stack_bounds, get_z_values_for_stack,
+                             create_stack, set_stack_state)
+from renderapi.tilespec import TileSpec, get_tile_specs_from_z
+from renderapi.client import import_tilespecs
 from renderapi.transform import AffineModel
 
 
@@ -15,7 +18,7 @@ def get_random_ints(N):
     return random.randint(lower,upper)
 
 
-def create_patch(tile_spec):
+def create_patch_xml(tile_spec):
     """Generate xml data for a given patch (tile)"""
     # Abbreviate tile specification
     ts = tile_spec
@@ -48,7 +51,7 @@ def create_patch(tile_spec):
     return patch
 
 
-def create_layer(stack, z, render):
+def create_layer_xml(stack, z, render):
     """Generate xml data for a given z layer"""
     # Create xml header data for layer
     layer = f"""
@@ -65,7 +68,7 @@ def create_layer(stack, z, render):
     # Loop through tiles
     for ts in tile_specs:
         # Add patch data to layer
-        patch = create_patch(ts)
+        patch = create_patch_xml(ts)
         layer += patch
     # Add layer footer
     layer += """
@@ -73,7 +76,7 @@ def create_layer(stack, z, render):
     return layer
 
 
-def create_stack(stack, z_values=None, render=None):
+def create_stack_xml(stack, z_values=None, render=None):
     """Generate xml data for a given stack"""
     # Fetch z values for stack
     if z_values is None:
@@ -83,9 +86,9 @@ def create_stack(stack, z_values=None, render=None):
     # Loop through z layers
     for z in tqdm(z_values):
         # Add layer data to stack
-        layer = create_layer(stack=stack,
-                             z=z,
-                             render=render)
+        layer = create_layer_xml(stack=stack,
+                                 z=z,
+                                 render=render)
         stack_data += layer
     return stack_data
 
@@ -100,10 +103,10 @@ def create_trakem2_project(stack, xml_filepath, z_values=None, render=None):
     stack_bounds = get_stack_bounds(stack, render=render)
     width, height = (stack_bounds['maxX'] - stack_bounds['minX'],
                      stack_bounds['maxY'] - stack_bounds['minY'])
-    xml_layer_set = create_layer_set(width=width,
+    xml_layer_set = create_layer_xml(width=width,
                                      height=height)
     # Create stack xml data
-    xml_stack = create_stack(stack, z_values, render)
+    xml_stack = create_stack_xml(stack, z_values, render)
     # Create header
     xml_footer = create_footer()
     with xml_filepath.open('w', encoding='utf-8') as xml:
@@ -112,6 +115,56 @@ def create_trakem2_project(stack, xml_filepath, z_values=None, render=None):
         xml.write(xml_layer_set)
         xml.write(xml_stack)
         xml.write(xml_footer)
+
+
+def import_trakem2_project(stack, xml_filepath, render):
+    """Import render stack from TrakEM2 xml file"""
+    # Soupify TrakEM2 xml file
+    soup = Soup(xml_filepath.read_bytes(), 'lxml')
+    
+    # Iterate through layers to collect tile specifications
+    tile_specs = []
+    for layer in tqdm(soup.find_all('t2_layer')):
+        
+        # Iterate through patches
+        for patch in layer.find_all('t2_patch'):
+
+            # Get patch data as dict
+            d = patch.attrs
+
+            # Parse transform data
+            tforms = []
+            for tform in patch.find_all('iict_transform'):
+                M00, M10, M01, M11, B0, B1 = [float(i) for i in re.findall(r'-?[\d.]+', tform['data'])]
+                A = AffineModel(M00, M01, M10, M11, B0, B1)
+                tforms.append(A)
+            # Create tile specification
+            ts = TileSpec(tileId=d['title'],
+                          z=layer.attrs['z'],
+                          width=d['width'],
+                          height=d['height'],
+                          imageUrl=d['file_path'],
+                          minint=d['min'],
+                          maxint=d['max'],
+                          tforms=tforms)
+            # Collect tile specification
+            tile_specs.append(ts)
+
+    # Create stack
+    create_stack(stack=stack,
+                 render=render)
+    # Import TileSpecs to render
+    out = f"Importing tile specifications to \033[1m{stack}\033[0m..."
+    print(out)
+    import_tilespecs(stack=stack,
+                     tilespecs=tile_specs,
+                     render=render)
+    # Close stack
+    set_stack_state(stack=stack,
+                    state='COMPLETE',
+                    render=render)
+    out = f"Stack \033[1m{stack}\033[0m created successfully."
+    print(out)
 
 
 def create_project_header(xml_filepath):

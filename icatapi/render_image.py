@@ -2,7 +2,6 @@ import warnings
 from itertools import product
 from tqdm.notebook import tqdm
 import numpy as np
-import pandas as pd
 from seaborn import color_palette
 from shapely.geometry import box
 from shapely import affinity

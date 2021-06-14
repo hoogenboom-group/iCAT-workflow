@@ -4,7 +4,6 @@
 1. Vastly overcomplicated but highly recommended environment setup with conda
 ```
 $ conda create -n icat jupyterlab shapely
-
 $ conda activate icat
 $ (icat) conda install -c conda-forge nodejs=15
 $ (icat) pip install tqdm ipympl ipywidgets

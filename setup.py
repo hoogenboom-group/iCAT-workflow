@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 DISTNAME = "iCAT-workflow"
-DESCRIPTION = "Post-processing workflow for CLEM image data"
+DESCRIPTION = "Post-processing workflow for volume CLEM image data"
 MAINTAINER = "Ryan Lane"
 MAINTAINER_EMAIL = "r.i.lane@tudelft.nl"
 LICENSE = "LICENSE"
@@ -13,8 +13,11 @@ PACKAGES = [
 INSTALL_REQUIRES = [
     "numpy",
     "scipy",
+    "pandas",
+    "matplotlib",
     "scikit-image",
     "shapely",
+    "beautifulsoup4"
     "render-python",
 ]
 

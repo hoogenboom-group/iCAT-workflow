@@ -23,7 +23,7 @@ def create_patch_xml(tile_spec):
     # Abbreviate tile specification
     ts = tile_spec
     # Generate oid
-    x, y = [int(i) for i in re.findall('\d+', ts.tileId)[-2:]]
+    x, y = [int(i) for i in re.findall(r'\d+', ts.tileId)[-2:]]
     oid = f"{ts.z:.0f}{x:02d}{y:02d}"
     # Get total transform
     AT = AffineModel()
@@ -136,12 +136,12 @@ def import_trakem2_project(stack, xml_filepath, render):
 
             # Parse transform data
             M00, M10, M01, M11, B0, B1 = [float(i) for i in re.findall(
-                r'-?[\d.]+(?:e-?\d+)?', d['transform'])]
+                r'-?[\d.]+(?:[Ee]-?\d+)?', d['transform'])]
             A = AffineModel(M00, M01, M10, M11, B0, B1)
 
             # Define layout
             z = float(layer.attrs['z'])
-            col, row = [int(i) for i in re.findall('\d+', d['title'])][-2:]
+            col, row = [int(i) for i in re.findall(r'\d+', d['title'])][-2:]
             layout = Layout(sectionId=f'S{int(z):03d}',
                             imageRow=row,
                             imageCol=col)

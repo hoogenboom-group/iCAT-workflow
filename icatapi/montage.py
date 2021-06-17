@@ -109,7 +109,7 @@ def run_point_match_client(data, stack, collection, render, **pointMatchClient_k
                      collection=collection,
                      tile_pairs=tile_pair_batch,
                      sift_options=sift_options,
-                     render=render
+                     render=render,
                      **pointMatchClient_kwargs)
 
 
@@ -137,7 +137,8 @@ def generate_point_matches(df_pairs, match_collections, sift_options, render,
         stack : str
             stack containing the tiles
         stack2 : str
-            second optional stack containing tiles (if stack2 is not none, then tile_pair['p'] comes from stack and tile_pair['q'] comes from stack2)
+            second optional stack containing tiles (if stack2 is not none, then
+            tile_pair['p'] comes from stack and tile_pair['q'] comes from stack2)
         collection : str
             point match collection to save results into
         tile_pairs : iterable
@@ -154,32 +155,35 @@ def generate_point_matches(df_pairs, match_collections, sift_options, render,
         renderWithoutMask: bool
             whether to exclude the mask when rendering tile (default=False)
         normalizeForMatching: bool
-            whether to apply traditional 'normalizeForMatching' transform manipulation to image
-            this removes the last transform from the transformList, then if there are more than 3 transforms
-            continues to remove transforms until there are exactly 3.  Then assumes the image will be near 0,0
-            with a width/height that is about equal to the raw image width/height.  This is true for Janelia's
-            conventions for transformation alignment, but use at your own risk. (default=True)
+            whether to apply traditional 'normalizeForMatching' transform manipulation
+            to image this removes the last transform from the transformList, then if
+            there are more than 3 transforms continues to remove transforms until
+            there are exactly 3.  Then assumes the image will be near 0,0 with a
+            width/height that is about equal to the raw image width/height. This is
+            true for Janelia's conventions for transformation alignment, but use at
+            your own risk. (default=True)
         excludeTransformsAfterLast: str or None
-            alternative to normalizeForMatching, which uses transformLabels.  Will remove all transformations
-            after the last transformation with this transform label.  i.e. if all lens corrections have a 'lens'
-            label.  Then this will remove all non-lens transformations from the list.
-            This is more general than normalizeForMatching=true, but requires you have transform labels applied.
-            default = None
+            alternative to normalizeForMatching, which uses transformLabels.  Will
+            remove all transformations after the last transformation with this transform
+            label. i.e. if all lens corrections have a 'lens' label.  Then this will
+            remove all non-lens transformations from the list. This is more general
+            than normalizeForMatching=true, but requires you have transform labels applied.
+            (default = None)
         excludeFirstTransformAndAllAfter: str
             alternative to normalizeForMatching which finds the first transform in the list with a given label
             and then removes that transform and all transforms that follow it. i.e. if you had a compound list
             of transformations, and you had labelled the first non-local transform 'montage' then setting
             excludeFirstTransformAndAllAfter='montage' would remove that montage transform and any other
-            transforms that you had applied after it. default= None.
+            transforms that you had applied after it. (default=None).
         excludeAllTransforms: bool
             alternative to normalizeForMatching which simply removes all transforms from the list.
-            default = False
+            (default=False)
         stackChannels: str or None
             If specified, option to select which channel is used for the stack.
-            default = None
+            (default=None)
         stack2Channels: str or None
             If specified, option to select which channel is used for stack2, if specified.
-            default = None
+            (default=None)
     """
     # Loop through sections of each montage stack
     for (stack, z), tile_pairs in tqdm(df_pairs.groupby(['stack', 'z'])):
@@ -205,8 +209,7 @@ def generate_point_matches(df_pairs, match_collections, sift_options, render,
 
             # Run `pointMatchClient` on `N_cores`
             with WithPool(N_cores) as pool:
-                pool.map(point_match_client_partial,
-                         zip(tp_batch, sift_options_batch))
+                pool.map(point_match_client_partial, zip(tp_batch, sift_options_batch))
 
 
 # TODO: make this function work

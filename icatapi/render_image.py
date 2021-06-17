@@ -8,11 +8,6 @@ from shapely import affinity
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 
-from skimage import img_as_uint
-from skimage.color import rgb2grey
-from skimage.io import imread
-from tifffile import TiffWriter
-
 from renderapi.render import format_preamble
 from renderapi.stack import (get_stack_bounds,
                              get_bounds_from_z,
@@ -235,18 +230,6 @@ def render_neighborhood_image(stack, tileId, neighborhood=1, width=1024,
     else:
         return image
 
-
-def write_tif(fp, image):
-    """Simple wrapper for tifffile.TiffWriter"""
-    # Convert to grey scale 16-bit image
-    with warnings.catch_warnings():      # Suppress precision
-        warnings.simplefilter('ignore')  # loss warnings
-        image = img_as_uint(rgb2grey(image))
-
-    # Save to disk with `TiffWriter`
-    fp.parent.mkdir(parents=False, exist_ok=True)
-    with TiffWriter(fp.as_posix()) as tif:
-        tif.save(image)
 
 
 def plot_tile_map(stacks, render=None):

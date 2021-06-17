@@ -1,4 +1,3 @@
-import warnings
 from itertools import product
 from tqdm.notebook import tqdm
 import numpy as np
@@ -24,7 +23,6 @@ __all__ = ['render_bbox_image',
            'render_stack_images',
            'render_layer_images',
            'render_neighborhood_image',
-           'write_tif',
            'plot_tile_map',
            'plot_stacks',
            'plot_neighborhoods']

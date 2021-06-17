@@ -212,6 +212,10 @@ def generate_point_matches(df_pairs, match_collections, sift_options, render,
                 pool.map(point_match_client_partial, zip(tp_batch, sift_options_batch))
 
 
+def remove_island_tiles():
+    pass
+
+
 # TODO: make this function work
 # def get_matches_within_section(match_collection, sectionId, render):
 #     """Create DataFrame of point matches for a given section

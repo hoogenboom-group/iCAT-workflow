@@ -1,13 +1,16 @@
-from pathlib import Path
 import re
+import warnings
 
-import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup as Soup
-from tifffile import TiffFile
+from tifffile import TiffFile, TiffWriter
+
+from skimage import img_as_uint
+from skimage.color import rgb2grey
 
 
-__all__ = ['parse_metadata']
+__all__ = ['parse_metadata',
+           'write_tif']
 
 
 def parse_metadata(filepath, section):
@@ -74,3 +77,16 @@ def parse_metadata(filepath, section):
     tile_dict['acqTime'] = pd.to_datetime(soup.acquisitiondate.text)
 
     return tile_dict
+
+
+def write_tif(fp, image):
+    """Simple wrapper for tifffile.TiffWriter"""
+    # Convert to grey scale 16-bit image
+    with warnings.catch_warnings():      # Suppress precision
+        warnings.simplefilter('ignore')  # loss warnings
+        image = img_as_uint(rgb2grey(image))
+
+    # Save to disk with `TiffWriter`
+    fp.parent.mkdir(parents=False, exist_ok=True)
+    with TiffWriter(fp.as_posix()) as tif:
+        tif.save(image)

@@ -95,7 +95,7 @@ def get_tile_pairs_4_montage(stack, render,
         # Create DataFrame from json
         df = pd.json_normalize(tile_pairs_json['neighborPairs'])
         df['z'] = z
-        df_pairs = df_pairs.append(df, sort=False)
+        df_pairs = pd.concat([df_pairs, df])
 
     # Add stack info and reset index
     df_pairs['stack'] = stack

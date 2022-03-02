@@ -81,7 +81,7 @@ def create_stacks_DataFrame(stacks, render):
     # Create and append DataFrames from each given stack
     for stack in stacks:
         df_stack = create_stack_DataFrame(stack, render=render)
-        df_stacks = pd.concat([df_stack, df_stack])
+        df_stacks = pd.concat([df_stacks, df_stack])
     return df_stacks.reset_index(drop=True)
 
 

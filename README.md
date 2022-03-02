@@ -1,7 +1,10 @@
 # iCAT-workflow
+Post-processing workflow for volume CLEM image data.
 
 ### Installation
-1. Vastly overcomplicated but highly recommended environment setup with conda
+Assumes you are logged into a remote Linux server with [conda](https://docs.conda.io/en/latest/miniconda.html#linux-installers) setup.
+
+1. Vastly overcomplicated but highly recommended environment setup with conda.
 ```
 $ conda create -n icat jupyterlab altair vega_datasets
 $ conda activate icat
@@ -24,15 +27,22 @@ $ (icat) git clone https://github.com/hoogenboom-group/iCAT-workflow
 ```
 
 ### Getting started
-1. (Optional) Download sample data (~3GB) to a convenient location (will take several minutes)
+
+1. Connect to remote server with port forwarding e.g.
+```
+ssh -L 8888:localhost:8888 {user}@{server}
+```
+
+2. (Optional) Download sample data (~3GB) to a convenient location (will take several minutes)
 ```
 $ (icat) cd /path/to/data/storage/
 $ (icat) svn export https://github.com/hoogenboom-group/iCAT-data.git/trunk/pancreas
 ```
 
-2. Start `jupyter lab` session
+3. Start `jupyter lab` session
 ```
 $ (icat) cd ./iCAT-workflow/
 $ (icat) jupyter lab --no-browser --port 8888
 ```
 
+4. Open a browser and navigate to http://localhost:8888/lab to run jupyter lab session

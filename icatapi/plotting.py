@@ -125,7 +125,7 @@ def render_partition_image(stack, z, bbox, width=1024, render=None,
                                render=render,
                                **renderapi_kwargs)[:,:,0]
         # Something else went wrong
-        if isinstance(image, RenderError):
+        if isinstance(image_p, RenderError):
             print(RenderError)
             return -1
         else:

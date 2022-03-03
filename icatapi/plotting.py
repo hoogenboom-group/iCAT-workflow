@@ -11,7 +11,7 @@ from renderapi.render import format_preamble
 from renderapi.stack import (get_stack_bounds,
                              get_bounds_from_z,
                              get_z_values_for_stack)
-from renderapi.tilespec import get_tile_spec
+from renderapi.tilespec import get_tile_spec, get_tile_specs_from_box
 from renderapi.image import get_bb_image
 from renderapi.errors import RenderError
 
@@ -19,6 +19,7 @@ from .render_pandas import create_stacks_DataFrame
 
 
 __all__ = ['render_bbox_image',
+           'render_partition_image',
            'render_tileset_image',
            'render_stack_images',
            'render_layer_images',
@@ -63,12 +64,13 @@ def render_bbox_image(stack, z, bbox, width=1024, render=None,
     s = width / (bbox[2] - bbox[0])
 
     # Render image bounding box image as tif
-    image = get_bb_image(stack=stack, z=z, x=x, y=y,
-                         width=w, height=h, scale=s,
-                         render=render,
-                         **renderapi_kwargs)
-    # Sometimes it does not work
-    if isinstance(image, RenderError):
+    try:
+        image = get_bb_image(stack=stack, z=z, x=x, y=y,
+                             width=w, height=h, scale=s,
+                             render=render,
+                             **renderapi_kwargs)
+    # Sometimes it overloads the system
+    except RenderError:
         request_url = format_preamble(
             host=render.DEFAULT_HOST,
             port=render.DEFAULT_PORT,
@@ -76,9 +78,61 @@ def render_bbox_image(stack, z, bbox, width=1024, render=None,
             project=render.DEFAULT_PROJECT,
             stack=stack) + \
             f"/z/{z:.0f}/box/{x:.0f},{y:.0f},{w:.0f},{h:.0f},{s}/png-image"
-        print(f"Failed to load {request_url}.")
-    else:
-        return image
+        print(f"Failed to load {request_url}. Trying again with partitioned bboxes.")
+        # Try to render image from smaller bboxes
+        image = render_partition_image(stack, z, bbox, width, render,
+                                       **renderapi_kwargs)
+    return image
+
+
+def render_partition_image(stack, z, bbox, width=1024, render=None,
+                           **renderapi_kwargs):
+    """Renders a bbox image from partitions"""
+    # Unpack bbox
+    x = bbox[0]
+    y = bbox[1]
+    w = bbox[2] - bbox[0]
+    h = bbox[3] - bbox[1]
+    s = width / (bbox[2] - bbox[0])
+
+    # Get tiles in bbox
+    tiles = get_tile_specs_from_box(stack, z, x, y, w, h, s, render=render)
+    # Average tile width/height
+    width_p = np.mean([tile.width for tile in tiles])
+    height_p = np.mean([tile.height for tile in tiles])
+
+    # Get coordinates for partitions (sub-bboxes)
+    Nx_p = int(np.ceil(w/width_p))      # num partitions in x
+    Ny_p = int(np.ceil(h/height_p))     # num partitions in y
+    xs_p = np.arange(x, x+w, width_p)   # x coords of partitions
+    ys_p = np.arange(y, y+h, height_p)  # y coords of partitions
+    ws_p = np.array((width_p,) * (Nx_p-1) + (w % width_p,))    # partition widths
+    hs_p = np.array((height_p,) * (Ny_p-1) + (h % height_p,))  # partition heights
+    s_p = width / width_p / Nx_p                      # scale
+    # Create partitions from meshgrid
+    partitions = np.array([g.ravel() for g in np.meshgrid(xs_p, ys_p)] +\
+                          [g.ravel() for g in np.meshgrid(ws_p, hs_p)]).T
+
+    # Global bbox image (to stitch together partitions)
+    height = int((bbox[3]-bbox[1])/(bbox[2]-bbox[0]) * width)
+    image = np.zeros((height, width))
+    # Need and x, y offsets such that image starts at (0, 0)
+    x0 = int(xs_p[0] * s_p)
+    y0 = int(ys_p[0] * s_p)
+    # Create a bbox image for each partition
+    for p in tqdm(partitions[:], leave=False):
+        image_p = get_bb_image(stack=stack, z=z, x=p[0], y=p[1],
+                               width=p[2], height=p[3], scale=s_p,
+                               render=render,
+                               **renderapi_kwargs)[:,:,0]
+        # Add partition to global bbox image
+        x1 = int(p[0] * s_p) - x0
+        x2 = x1 + int(p[2] * s_p)
+        y1 = int(p[1] * s_p) - y0
+        y2 = y1 + int(p[3] * s_p)
+        image[y1:y2, x1:x2] = image_p
+
+    return image.astype(image_p.dtype)
 
 
 def render_tileset_image(stack, z, width=1024, render=None,

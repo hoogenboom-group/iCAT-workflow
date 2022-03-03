@@ -124,13 +124,17 @@ def render_partition_image(stack, z, bbox, width=1024, render=None,
                                width=p[2], height=p[3], scale=s_p,
                                render=render,
                                **renderapi_kwargs)[:,:,0]
-        # Add partition to global bbox image
-        x1 = int(p[0] * s_p) - x0
-        x2 = x1 + int(p[2] * s_p)
-        y1 = int(p[1] * s_p) - y0
-        y2 = y1 + int(p[3] * s_p)
-        image[y1:y2, x1:x2] = image_p
-
+        # Something else went wrong
+        if isinstance(image, RenderError):
+            print(RenderError)
+            return -1
+        else:
+            # Add partition to global bbox image
+            x1 = int(p[0] * s_p) - x0
+            x2 = x1 + int(p[2] * s_p)
+            y1 = int(p[1] * s_p) - y0
+            y2 = y1 + int(p[3] * s_p)
+            image[y1:y2, x1:x2] = image_p
     return image.astype(image_p.dtype)
 
 

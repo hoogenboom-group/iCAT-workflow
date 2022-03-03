@@ -126,7 +126,7 @@ def render_partition_image(stack, z, bbox, width=1024, render=None,
                                **renderapi_kwargs)
         # Something else went wrong
         if isinstance(image_p, RenderError):
-            print(RenderError)
+            print(RenderError.args)
             return -1
         else:
             # Add partition to global bbox image

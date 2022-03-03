@@ -123,7 +123,7 @@ def render_partition_image(stack, z, bbox, width=1024, render=None,
         image_p = get_bb_image(stack=stack, z=z, x=p[0], y=p[1],
                                width=p[2], height=p[3], scale=s_p,
                                render=render,
-                               **renderapi_kwargs)[:,:,0]
+                               **renderapi_kwargs)
         # Something else went wrong
         if isinstance(image_p, RenderError):
             print(RenderError)
@@ -134,7 +134,7 @@ def render_partition_image(stack, z, bbox, width=1024, render=None,
             x2 = x1 + int(p[2] * s_p)
             y1 = int(p[1] * s_p) - y0
             y2 = y1 + int(p[3] * s_p)
-            image[y1:y2, x1:x2] = image_p
+            image[y1:y2, x1:x2] = image_p[:,:,0]
     return image.astype(image_p.dtype)
 
 

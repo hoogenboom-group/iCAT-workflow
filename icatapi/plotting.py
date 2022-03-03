@@ -64,13 +64,12 @@ def render_bbox_image(stack, z, bbox, width=1024, render=None,
     s = width / (bbox[2] - bbox[0])
 
     # Render image bounding box image as tif
-    try:
-        image = get_bb_image(stack=stack, z=z, x=x, y=y,
-                             width=w, height=h, scale=s,
-                             render=render,
-                             **renderapi_kwargs)
+    image = get_bb_image(stack=stack, z=z, x=x, y=y,
+                            width=w, height=h, scale=s,
+                            render=render,
+                            **renderapi_kwargs)
     # Sometimes it overloads the system
-    except RenderError:
+    if isinstance(image, RenderError):
         request_url = format_preamble(
             host=render.DEFAULT_HOST,
             port=render.DEFAULT_PORT,

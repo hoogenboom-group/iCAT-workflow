@@ -1,5 +1,7 @@
+import requests
 from itertools import product
 from tqdm.notebook import tqdm
+
 import numpy as np
 from seaborn import color_palette
 from shapely.geometry import box
@@ -456,3 +458,9 @@ def plot_neighborhoods(stacks, z_values=None, neighborhood=1, width=1024,
         ax.set_title(f"{stack}\nz = {z:.0f} | {sectionId}\n{tileId}")
         ax.set_xlabel('X [px]')
         ax.set_ylabel('Y [px]')
+
+
+def clear_image_cache():
+    url = 'https://sonic.tnw.tudelft.nl/render-ws/v1/imageProcessorCache/allEntries'
+    response = requests.delete(url)
+    return response

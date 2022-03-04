@@ -6,14 +6,18 @@ from bs4 import BeautifulSoup as Soup
 from tifffile import TiffFile, TiffWriter
 
 from skimage import img_as_uint
-from skimage.color import rgb2grey
+from skimage.color import rgb2gray
 
 
 __all__ = ['parse_metadata',
            'write_tif']
 
 
-def parse_metadata(filepath, section):
+# TU Delft storage server
+HOST = 'https://sonic.tnw.tudelft.nl'
+
+
+def parse_metadata(filepath, section, host=HOST):
     """Parses Odemis (single-page) tif file metadata
 
     Parameters
@@ -60,7 +64,7 @@ def parse_metadata(filepath, section):
     tile_dict['width'] = int(soup.pixels['sizex'])
     tile_dict['height'] = int(soup.pixels['sizey'])
     # Set imageUrl and maskUrl
-    tile_dict['imageUrl'] = filepath.as_uri()
+    tile_dict['imageUrl'] = f"{host}{filepath.as_posix()}"
     tile_dict['maskUrl'] = None
     # Set min, max intensity levels at 16bit uint limits
     tile_dict['minint'] = 0
@@ -84,7 +88,7 @@ def write_tif(fp, image):
     # Convert to grey scale 16-bit image
     with warnings.catch_warnings():      # Suppress precision
         warnings.simplefilter('ignore')  # loss warnings
-        image = img_as_uint(rgb2grey(image))
+        image = img_as_uint(rgb2gray(image))
 
     # Save to disk with `TiffWriter`
     fp.parent.mkdir(parents=False, exist_ok=True)

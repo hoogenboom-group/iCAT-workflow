@@ -97,39 +97,43 @@ def render_partition_image(stack, z, bbox, width=1024, render=None,
     # Get tiles in bbox
     tiles = get_tile_specs_from_box(stack, z, x, y, w, h, s, render=render)
     # Average tile width/height
-    width_p = np.mean([tile.width for tile in tiles])
-    height_p = np.mean([tile.height for tile in tiles])
+    width_ts = np.mean([tile.width for tile in tiles])
+    height_ts = np.mean([tile.height for tile in tiles])
 
     # Get coordinates for partitions (sub-bboxes)
-    Nx_p = int(np.ceil(w/width_p))      # num partitions in x
-    Ny_p = int(np.ceil(h/height_p))     # num partitions in y
-    xs_p = np.arange(x, x+w, width_p)   # x coords of partitions
-    ys_p = np.arange(y, y+h, height_p)  # y coords of partitions
-    ws_p = np.array((width_p,) * (Nx_p-1) + (w % width_p,))    # partition widths
-    hs_p = np.array((height_p,) * (Ny_p-1) + (h % height_p,))  # partition heights
-    s_p = width / width_p / Nx_p                      # scale
+    Nx_p = int(np.ceil(w/width_ts))      # num partitions in x
+    Ny_p = int(np.ceil(h/height_ts))     # num partitions in y
+    xs_p = np.arange(x, x+w, width_ts)   # x coords of partitions
+    ys_p = np.arange(y, y+h, height_ts)  # y coords of partitions
+    ws_p = np.array((width_ts,) * (Nx_p-1) + (w % width_ts,))    # partition widths
+    hs_p = np.array((height_ts,) * (Ny_p-1) + (h % height_ts,))  # partition heights
     # Create partitions from meshgrid
     partitions = np.array([g.ravel() for g in np.meshgrid(xs_p, ys_p)] +\
                           [g.ravel() for g in np.meshgrid(ws_p, hs_p)]).T
 
     # Global bbox image (to stitch together partitions)
-    height = int((bbox[3]-bbox[1])/(bbox[2]-bbox[0]) * width)
+    height = int(h/w * width)
     image = np.zeros((height, width))
-    # Need and x, y offsets such that image starts at (0, 0)
-    x0 = int(xs_p[0] * s_p)
-    y0 = int(ys_p[0] * s_p)
+    # Need x, y offsets such that image starts at (0, 0)
+    x0 = int(xs_p[0] * s)
+    y0 = int(ys_p[0] * s)
     # Create a bbox image for each partition
     for p in tqdm(partitions[:], leave=False):
         image_p = get_bb_image(stack=stack, z=z, x=p[0], y=p[1],
-                               width=p[2], height=p[3], scale=s_p,
+                               width=p[2], height=p[3], scale=s,
                                render=render,
-                               **renderapi_kwargs)
+                               **renderapi_kwargs)[:,:,0]
+        # Get coords for global bbox image
+        x1 = int(p[0] * s) - x0
+        x2 = x1 + int(p[2] * s)
+        y1 = int(p[1] * s) - y0
+        y2 = y1 + int(p[3] * s)
+        # Pad to deal with rounding errors
+        cushion = ((y2-y1) - image_p.shape[0],
+                   (x2-x1) - image_p.shape[1])
+        image_p = np.pad(image_p, pad_width=((0, 0), (cushion)))
         # Add partition to global bbox image
-        x1 = int(p[0] * s_p) - x0
-        x2 = x1 + int(p[2] * s_p)
-        y1 = int(p[1] * s_p) - y0
-        y2 = y1 + int(p[3] * s_p)
-        image[y1:y2, x1:x2] = image_p[:,:,0]
+        image[y1:y2, x1:x2] = image_p
     return image.astype(image_p.dtype)
 
 

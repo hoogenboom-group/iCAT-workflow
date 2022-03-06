@@ -478,7 +478,7 @@ def colorize(image, T):
         Color transformed image
     """
     # Convert to rgba
-    rgba = color.gray2rgb(image, alpha=True)
+    rgba = color.gray2rgba(image, alpha=True)
     # Apply transform
     transformed = np.dot(rgba, T)
     rescaled = exposure.rescale_intensity(transformed)

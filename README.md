@@ -2,7 +2,7 @@
 Post-processing workflow for volume CLEM image data.
 
 ### Installation
-Assumes you are logged into a remote Linux server with [conda](https://docs.conda.io/en/latest/miniconda.html#linux-installers) setup.
+Assumes you are logged into a remote Linux server with [conda](https://docs.conda.io/en/latest/miniconda.html#linux-installers) configured.
 
 1. Vastly overcomplicated but highly recommended environment setup with conda.
 ```

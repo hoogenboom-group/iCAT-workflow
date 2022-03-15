@@ -29,7 +29,14 @@ __all__ = ['render_bbox_image',
            'render_neighborhood_image',
            'plot_tile_map',
            'plot_stacks',
-           'plot_neighborhoods']
+           'plot_neighborhoods',
+           'colorize',
+           'T_HOECHST',
+           'T_AF594',
+           'T_RED',
+           'T_GREEN',
+           'T_BLUE',
+           'T_YELLOW']
 
 
 def render_bbox_image(stack, z, bbox, width=1024, render=None,

@@ -103,7 +103,7 @@ def create_trakem2_project(stack, xml_filepath, z_values=None, render=None):
     stack_bounds = get_stack_bounds(stack, render=render)
     width, height = (stack_bounds['maxX'] - stack_bounds['minX'],
                      stack_bounds['maxY'] - stack_bounds['minY'])
-    xml_layer_set = create_layer_xml(width=width,
+    xml_layer_set = create_layer_set(width=width,
                                      height=height)
     # Create stack xml data
     xml_stack = create_stack_xml(stack, z_values, render)

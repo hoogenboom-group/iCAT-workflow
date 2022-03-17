@@ -1,3 +1,4 @@
+import requests
 import numpy as np
 import pandas as pd
 
@@ -41,3 +42,10 @@ def get_tile_pairs_4_alignment(stack, render,
     df_pairs = pd.json_normalize(tile_pairs_json['neighborPairs'])
     df_pairs['stack'] = stack
     return df_pairs
+
+
+def delete_match_collection(match_collection, render):
+    owner = render.DEFAULT_OWNER
+    url = f'https://sonic.tnw.tudelft.nl/render-ws/v1/owner/{owner}/matchCollection/{match_collection}'
+    response = requests.delete(url)
+    return response

@@ -19,7 +19,7 @@ __all__ = ['parse_metadata',
 HOST = 'https://sonic.tnw.tudelft.nl'
 
 
-def parse_metadata(filepath, section, host=HOST):
+def parse_metadata(filepath, stack=None, z=None, sectionId=None, host=HOST):
     """Parses Odemis (single-page) tif file metadata
 
     Parameters
@@ -34,20 +34,26 @@ def parse_metadata(filepath, section, host=HOST):
     tile_dict : dict
         Almighty dictionary containing lots of juicy info about the image tile
     """
-
     # Read metadata
     # -------------
     tif = TiffFile(filepath.as_posix())
     metadata = tif.pages[0].description
     soup = Soup(metadata, 'lxml')
-    tile_dict = {}
+
+    # Infer stack and section info
+    # ----------------------------
+    if stack is None:
+        stack = filepath.parents[1].name
+    if sectionId is None:
+        sectionId = filepath.parents[0].name
+    if z is None:
+        z = int(re.findall(r'\d+', sectionId)[-1])
 
     # Layout parameters
     # -----------------
-    # Set sectionId
-    tile_dict['sectionId'] = section
+    tile_dict = {}
     # Infer image row and column from image tile filename
-    col, row = [int(i) for i in re.findall(r'\d+', filepath.name)[-2:]]
+    col, row = [int(i) for i in re.findall(r'\d+', filepath.stem)[-2:]]
     tile_dict['imageRow'] = row
     tile_dict['imageCol'] = col
     # Parse metadata for stage coordinates
@@ -60,8 +66,11 @@ def parse_metadata(filepath, section, host=HOST):
 
     # Tile specification parameters
     # -----------------------------
-    # Set z based on section name
-    tile_dict['z'] = int(re.findall(r'\d+', section)[-1])
+    tile_dict['stack'] = stack
+    tile_dict['z'] = z
+    tile_dict['sectionId'] = sectionId
+    # Set unique tileId
+    tile_dict['tileId'] = f"{stack}-{sectionId}-{col:05d}x{row:05d}"
     # Parse metadata for width and height
     tile_dict['width'] = int(soup.pixels['sizex'])
     tile_dict['height'] = int(soup.pixels['sizey'])
@@ -73,9 +82,6 @@ def parse_metadata(filepath, section, host=HOST):
     tile_dict['maxint'] = 2**16 - 1
     # Set empty list of transforms
     tile_dict['tforms'] = []
-    # Set unique tileId
-    tile_dict['tileId'] = f"{filepath.stem.split('-')[0]}-"\
-                          f"{section}-{col:05d}x{row:05d}"
 
     # Additional tile specification parameters
     # ----------------------------------------

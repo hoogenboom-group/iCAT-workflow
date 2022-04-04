@@ -1,5 +1,6 @@
 import re
 import warnings
+import xml.etree.ElementTree as ET
 
 import pandas as pd
 from bs4 import BeautifulSoup as Soup
@@ -10,14 +11,15 @@ from skimage.color import rgb2gray
 
 
 __all__ = ['parse_metadata',
-           'write_tif']
+           'write_tif',
+           'split_tif']
 
 
 # TU Delft storage server
 HOST = 'https://sonic.tnw.tudelft.nl'
 
 
-def parse_metadata(filepath, section, host=HOST):
+def parse_metadata(filepath, stack=None, z=None, sectionId=None, host=HOST):
     """Parses Odemis (single-page) tif file metadata
 
     Parameters
@@ -32,20 +34,26 @@ def parse_metadata(filepath, section, host=HOST):
     tile_dict : dict
         Almighty dictionary containing lots of juicy info about the image tile
     """
-
     # Read metadata
     # -------------
     tif = TiffFile(filepath.as_posix())
     metadata = tif.pages[0].description
     soup = Soup(metadata, 'lxml')
-    tile_dict = {}
+
+    # Infer stack and section info
+    # ----------------------------
+    if stack is None:
+        stack = filepath.parents[1].name
+    if sectionId is None:
+        sectionId = filepath.parents[0].name
+    if z is None:
+        z = int(re.findall(r'\d+', sectionId)[-1])
 
     # Layout parameters
     # -----------------
-    # Set sectionId
-    tile_dict['sectionId'] = section
+    tile_dict = {}
     # Infer image row and column from image tile filename
-    col, row = [int(i) for i in re.findall(r'\d+', filepath.name)[-2:]]
+    col, row = [int(i) for i in re.findall(r'\d+', filepath.stem)[-2:]]
     tile_dict['imageRow'] = row
     tile_dict['imageCol'] = col
     # Parse metadata for stage coordinates
@@ -58,8 +66,11 @@ def parse_metadata(filepath, section, host=HOST):
 
     # Tile specification parameters
     # -----------------------------
-    # Set z based on section name
-    tile_dict['z'] = int(re.findall(r'\d+', section)[-1])
+    tile_dict['stack'] = stack
+    tile_dict['z'] = z
+    tile_dict['sectionId'] = sectionId
+    # Set unique tileId
+    tile_dict['tileId'] = f"{stack}-{sectionId}-{col:05d}x{row:05d}"
     # Parse metadata for width and height
     tile_dict['width'] = int(soup.pixels['sizex'])
     tile_dict['height'] = int(soup.pixels['sizey'])
@@ -71,9 +82,6 @@ def parse_metadata(filepath, section, host=HOST):
     tile_dict['maxint'] = 2**16 - 1
     # Set empty list of transforms
     tile_dict['tforms'] = []
-    # Set unique tileId
-    tile_dict['tileId'] = f"{filepath.stem.split('-')[0]}-"\
-                          f"{section}-{col:05d}x{row:05d}"
 
     # Additional tile specification parameters
     # ----------------------------------------
@@ -94,3 +102,82 @@ def write_tif(fp, image):
     fp.parent.mkdir(parents=False, exist_ok=True)
     with TiffWriter(fp.as_posix()) as tif:
         tif.save(image)
+
+
+def split_tif(tif):
+    """Divide multi-channel tif
+
+    Parameters
+    ----------
+    tif : `TiffFile`
+        Input tif file
+
+    Returns
+    -------
+    tifs : dict
+        Mapping from each channel to tuple containing image data + metadata
+        {'channel': (ndarray, Soup)}
+    """
+    # Read tif metadata
+    soup = Soup(tif.pages[0].description, 'lxml')
+
+    # Iterate through pages and image metadata
+    tifs = {}
+    for page, metadata in zip(tif.pages, soup.find_all('image')):
+
+        # --- Build up metadata for each new tif ---
+        # Create ET root with OME header info
+        root = ET.Element('OME', attrib={
+                "xmlns": "http://www.openmicroscopy.org/Schemas/OME/2012-06",
+                "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+                "xsi:schemaLocation": "http://www.openmicroscopy.org/Schemas/OME/2012-06 "
+                                      "http://www.openmicroscopy.org/Schemas/OME/2012-06/ome.xsd"})
+        # Add OME comment
+        com_txt = ("Warning: this comment is an OME-XML metadata block, which "
+                   "contains crucial dimensional parameters and other important "
+                   "metadata. Please edit cautiously (if at all), and back up the "
+                   "original data before doing so. For more information, see the "
+                   "OME-TIFF web site: http://ome-xml.org/wiki/OmeTiff.")
+        root.append(ET.Comment(com_txt))
+
+        # --- Instrument layout ---
+        # Add instrument and microscope tags
+        instr = ET.SubElement(root, "Instrument", attrib={"ID": "Instrument:0"})
+        micro = ET.SubElement(instr, "Microscope", attrib={
+            "Manufacturer": "Delmic",
+            "Model": "SECOM"})
+
+        # Extract detector, lightsource, and objective settings
+        # Add detector settings to instrument
+        if metadata.detectorsettings is not None:
+            for detector in soup.find_all('detector'):
+                if detector['id'] == metadata.detectorsettings['id']:
+                    instr.append(ET.fromstring(detector.decode()))
+        else:
+            detector = ET.SubElement(instr, "Detector", attrib={
+                "ID": "Detector:0",
+                "model": "pcie-6251"})
+        # Add lightsource settings to instrument
+        if metadata.lightsourcesettings is not None:
+            for lightsource in soup.find_all('lightsource'):
+                if lightsource['id'] == metadata.lightsourcesettings['id']:
+                    instr.append(ET.fromstring(lightsource.decode()))
+        # Add objective settings to instrument
+        if metadata.objectivesettings is not None:
+            for objective in soup.find_all('objective'):
+                if objective['id'] == metadata.objectivesettings['id']:
+                    instr.append(ET.fromstring(objective.decode()))
+
+        # --- Image layout ---
+        root.append(ET.fromstring(metadata.decode()))
+
+        # Convert ElementTree to Soup
+        tree = ET.ElementTree(root)
+        et = (b'<?xml version="1.0" encoding="UTF-8"?>' +
+              ET.tostring(tree.getroot(), encoding='utf-8'))
+        md = Soup(et, 'lxml')
+
+        # --- Populate tifs dict ---
+        tifs[page.tags['PageName'].value] = (page.asarray(), md)
+
+    return tifs

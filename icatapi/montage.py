@@ -5,7 +5,8 @@ import numpy as np
 import pandas as pd
 from tqdm.notebook import tqdm
 
-from renderapi.client import (tilePairClient, pointMatchClient, WithPool)
+from renderapi.client import (tilePairClient, pointMatchClient,
+                              SiftPointMatchOptions, WithPool)
 from renderapi.stack import get_z_values_for_stack
 from renderapi.pointmatch import get_matches_within_group
 
@@ -190,7 +191,7 @@ def generate_point_matches(df_pairs, match_collections, sift_options, render,
 
         # Group tile pairs into batches
         grouping = np.arange(len(tile_pairs)) // batch_size
-        for i, batch in tqdm(tile_pairs.groupby(grouping), leave=False):
+        for _, batch in tqdm(tile_pairs.groupby(grouping), leave=False):
 
             # Set up `pointMatchClient` partial
             point_match_client_partial = partial(run_point_match_client,
@@ -201,9 +202,13 @@ def generate_point_matches(df_pairs, match_collections, sift_options, render,
 
             # Create batch of tile pairs
             tp_batch = [[tuple(tp)] for tp in batch[['p.id', 'q.id']].values.tolist()]
+
             # Create corresponding batch of SIFT options (updating `firstCanvasPosition` arg)
             sift_options_batch = []
             for i in batch.index:
+                # Create new instance of `SiftPointMatchOptions`
+                sift_options = SiftPointMatchOptions(**sift_options.__dict__)
+                # Update canvas position -- only parameter that is tile pair dependent
                 sift_options.firstCanvasPosition = batch.loc[i, 'p.relativePosition']
                 sift_options_batch.append(sift_options)
 

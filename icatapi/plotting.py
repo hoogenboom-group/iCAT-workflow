@@ -75,11 +75,13 @@ def render_bbox_image(stack, z, bbox, width=1024, render=None,
 
     # Render image bounding box image as tif
     image = get_bb_image(stack=stack, z=z, x=x, y=y,
-                            width=w, height=h, scale=s,
-                            render=render,
-                            **renderapi_kwargs)
+                         width=w, height=h, scale=s,
+                         render=render,
+                         **renderapi_kwargs)
+
     # Sometimes it overloads the system
     if isinstance(image, RenderError):
+        # Recreate requested url
         request_url = format_preamble(
             host=render.DEFAULT_HOST,
             port=render.DEFAULT_PORT,
@@ -87,10 +89,12 @@ def render_bbox_image(stack, z, bbox, width=1024, render=None,
             project=render.DEFAULT_PROJECT,
             stack=stack) + \
             f"/z/{z:.0f}/box/{x:.0f},{y:.0f},{w:.0f},{h:.0f},{s}/png-image"
+        # Tell 'em the bad news
         print(f"Failed to load {request_url}. Trying again with partitioned bboxes.")
         # Try to render image from smaller bboxes
         image = render_partition_image(stack, z, bbox, width, render,
                                        **renderapi_kwargs)
+
     return image
 
 
@@ -190,15 +194,15 @@ def render_stack_images(stack, width=1024, render=None,
     ----------
     stack : str
         Stack with which to render images for all z values
-    render : `renderapi.render.RenderClient`
-        `render-ws` instance
     width : float
         Width of rendered tileset image in pixels
-    
+    render : `renderapi.render.RenderClient`
+        `render-ws` instance
+
     Returns
     -------
-    images : list
-        List of tileset images comprising the stack
+    images : dict
+        Dictionary of tileset images comprising the stack with z value as key
     """
     # Get z values of stack
     z_values = get_z_values_for_stack(stack=stack,
@@ -230,10 +234,15 @@ def render_layer_images(stacks, z, width=1024, render=None,
         List of stacks to with which to render layer images
     z : float
         Z value of stacks at which to render layer images
-    render : `renderapi.render.RenderClient`
-        `render-ws` instance
     width : float
         Width of rendered layer images in pixels
+    render : `renderapi.render.RenderClient`
+        `render-ws` instance
+
+    Returns
+    -------
+    images : dict
+        Dictionary of tileset images comprising the layer with stack name as key
     """
     # Loop through stacks and collect images
     images = {}

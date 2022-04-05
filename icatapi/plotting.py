@@ -113,42 +113,62 @@ def render_partition_image(stack, z, bbox, width=1024, render=None,
     # Average tile width/height
     width_ts = np.mean([tile.width for tile in tiles])
     height_ts = np.mean([tile.height for tile in tiles])
+    # Set (approximate) dimensions of partitions
+    w_p = min(400, width_ts)   # actual partition widths, heights are set
+    h_p = min(400, height_ts)  # are set a few lines later by np.diff
 
     # Get coordinates for partitions (sub-bboxes)
-    Nx_p = int(np.ceil(w/width_ts))      # num partitions in x
-    Ny_p = int(np.ceil(h/height_ts))     # num partitions in y
-    xs_p = np.arange(x, x+w, width_ts)   # x coords of partitions
-    ys_p = np.arange(y, y+h, height_ts)  # y coords of partitions
-    ws_p = np.array((width_ts,) * (Nx_p-1) + (w % width_ts,))    # partition widths
-    hs_p = np.array((height_ts,) * (Ny_p-1) + (h % height_ts,))  # partition heights
-    # Create partitions from meshgrid
-    partitions = np.array([g.ravel() for g in np.meshgrid(xs_p, ys_p)] +\
+    Nx_p = int(np.ceil(w/w_p))  # num partitions in x
+    Ny_p = int(np.ceil(h/h_p))  # num partitions in y
+    xs_p = np.linspace(x, x+w, Nx_p, dtype=int)  # x coords of partitions
+    ys_p = np.linspace(y, y+h, Ny_p, dtype=int)  # y coords of partitions
+    ws_p = np.diff(xs_p)  # partition widths
+    hs_p = np.diff(ys_p)  # partition heights
+    # Create partitions using meshgrid
+    #     [x0, y0, w0, h0]
+    #     [x1, y0, w1, h0]
+    #     [x2, y0, w2, h0] ...
+    partitions = np.array([g.ravel() for g in np.meshgrid(xs_p[:-1], ys_p[:-1])] +\
                           [g.ravel() for g in np.meshgrid(ws_p, hs_p)]).T
 
-    # Global bbox image (to stitch together partitions)
+    # Create empty bbox image (to stitch together partitions)
     height = int(h/w * width)
     image = np.zeros((height, width))
     # Need x, y offsets such that image starts at (0, 0)
     x0 = int(xs_p[0] * s)
     y0 = int(ys_p[0] * s)
     # Create a bbox image for each partition
-    for p in tqdm(partitions[:], leave=False):
+    for p in tqdm(partitions, leave=False):
+        # Get bbox image
         image_p = get_bb_image(stack=stack, z=z, x=p[0], y=p[1],
                                width=p[2], height=p[3], scale=s,
                                render=render,
-                               **renderapi_kwargs)[:,:,0]
+                               **renderapi_kwargs)
+
+        # Somehow it still overloads the system \_0_/
+        if isinstance(image_p, RenderError):
+            request_url = format_preamble(
+                host=render.DEFAULT_HOST,
+                port=render.DEFAULT_PORT,
+                owner=render.DEFAULT_OWNER,
+                project=render.DEFAULT_PROJECT,
+                stack=stack) + \
+                f"/z/{z:.0f}/box/{x:.0f},{y:.0f},{w:.0f},{h:.0f},{s}/png-image"
+            print(f"Failed to load {request_url}. Still fails -- wtf man.")
+            return image_p  # RenderError
+
         # Get coords for global bbox image
         x1 = int(p[0] * s) - x0
         x2 = x1 + int(p[2] * s)
         y1 = int(p[1] * s) - y0
         y2 = y1 + int(p[3] * s)
-        # Pad to deal with rounding errors
-        cushion = ((y2-y1) - image_p.shape[0],
-                   (x2-x1) - image_p.shape[1])
-        image_p = np.pad(image_p, pad_width=((0, 0), (cushion)))
         # Add partition to global bbox image
-        image[y1:y2, x1:x2] = image_p
-    return image.astype(image_p.dtype)
+        if len(image_p.shape) > 2:  # take only the first channel
+            image[y1:y2, x1:x2] = image_p[:,:,0]
+        else:
+            image[y1:y2, x1:x2] = image_p
+
+    return image
 
 
 def render_tileset_image(stack, z, width=1024, render=None,

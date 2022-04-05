@@ -132,7 +132,7 @@ def render_partition_image(stack, z, bbox, width=1024, render=None,
                           [g.ravel() for g in np.meshgrid(ws_p, hs_p)]).T
 
     # Create empty bbox image (to stitch together partitions)
-    height = int(h/w * width)
+    height = int(np.round(h/w * width))
     image = np.zeros((height, width))
     # Need x, y offsets such that image starts at (0, 0)
     x0 = int(xs_p[0] * s)
@@ -168,6 +168,9 @@ def render_partition_image(stack, z, bbox, width=1024, render=None,
         else:
             image[y1:y2, x1:x2] = image_p
 
+    # There are likely gaps due to rounding issues
+    # Fill in the gaps with mean value
+    image = np.where(image==0, image.mean(), image).astype(image_p.dtype)
     return image
 
 

@@ -500,6 +500,40 @@ def plot_neighborhoods(stacks, z_values=None, neighborhood=1, width=1024,
         ax.set_ylabel('Y [px]')
 
 
+def plot_stacks_interactive(z, stack_images, render=None):
+    """Plot stacks interactively (imshow) with a slider to scroll through z value
+
+    Parameters
+    ----------
+    z : scalar
+        Z value to plot
+    stack_images : dict
+        Collection of images in {stack1: {'z_n': image_n},
+                                         {'z_n+1': image_n+1},
+                                 stack2: {'z_n': image_n},
+                                         {'z_n+1': image_n+1}} form
+    """
+    # Get stack names as keys
+    stacks = list(stack_images.keys())
+    # Setup figure
+    ncols=len(stacks)
+    fig, axes = plt.subplots(ncols=ncols, sharex=True, sharey=True,
+                             squeeze=False, figsize=(7*ncols, 7))
+    # Map each stack to an axis
+    axmap = {k: v for k, v in zip(stacks, axes.flat)}
+    # Get extent from global bounds
+    bounds = np.array([list(get_stack_bounds(
+              stack=stack, render=render).values()) for stack in stacks])
+    extent = [bounds[:, 0].min(axis=0), bounds[:, 3].max(axis=0),  # minx, maxx
+              bounds[:, 1].min(axis=0), bounds[:, 4].max(axis=0)]  # miny, maxy
+    # Loop through stacks to plot images
+    for stack, images in stack_images.items():
+        axmap[stack].imshow(images[z], origin='lower', extent=extent)
+        axmap[stack].set_title(stack)
+        axmap[stack].set_aspect('equal')
+        axmap[stack].invert_yaxis()
+
+
 def clear_image_cache():
     url = 'https://sonic.tnw.tudelft.nl/render-ws/v1/imageProcessorCache/allEntries'
     response = requests.delete(url)

@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.transforms import Affine2D as AffineMPL
 
+from renderapi.stack import get_stack_bounds
 from renderapi.transform import AffineModel as AffineRender
 
 from .render_pandas import create_stack_DataFrame, create_stack_from_DataFrame
@@ -41,14 +42,30 @@ def scale_stack(stack_in, stack_out=None, sx=1.0, sy=1.0,
     df_stack = create_stack_DataFrame(stack=stack_in,
                                       render=render)
 
-    # Create scaling transform
-    T = AffineMPL().scale(sx, sy)
-    A = AffineRender()
-    A.M = T.get_matrix()
+    # Determine stack center
+    bounds = get_stack_bounds(stack=stack_in,
+                              render=render)
+    x0 = (bounds['minX'] + bounds['maxX']) / 2
+    y0 = (bounds['minY'] + bounds['maxY']) / 2
 
-    # Add scale transform to DataFrame
+    # Loop through tiles
     for i, tile in df_stack.iterrows():
-        df_stack.at[i, 'tforms'] += [A]
+
+        # Translate to center
+        T1 = AffineRender(B0=-x0,
+                          B1=-y0)
+        # Scale
+        S = AffineRender(M00=sx,
+                         M11=sy)
+
+        # Translate back such that (minX, minY) = (0, 0)
+        tx = np.abs(bounds['minX'] - x0) * sx
+        ty = np.abs(bounds['minY'] - y0) * sy
+        T2 = AffineRender(B0=tx,
+                          B1=ty)
+
+        # Add transform to tile
+        df_stack.at[i, 'tforms'] += [T1, S, T2]
 
     # Set output stack name
     stack_out = stack_out if stack_out is not None else stack_in

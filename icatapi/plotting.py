@@ -528,7 +528,8 @@ def plot_stacks_interactive(z, stack_images, render=None):
               bounds[:, 1].min(axis=0), bounds[:, 4].max(axis=0)]  # miny, maxy
     # Loop through stacks to plot images
     for stack, images in stack_images.items():
-        axmap[stack].imshow(images[z], origin='lower', extent=extent)
+        cmap = 'magma' if 'EM' not in stack else 'Greys'
+        axmap[stack].imshow(images[z], origin='lower', extent=extent, cmap=cmap)
         axmap[stack].set_title(stack)
         axmap[stack].set_aspect('equal')
         axmap[stack].invert_yaxis()

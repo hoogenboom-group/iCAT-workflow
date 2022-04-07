@@ -160,9 +160,11 @@ def render_partition_image(stack, z, bbox, width=1024, render=None,
 
         # Get coords for global bbox image
         x1 = int(p[0] * s) - x0
-        x2 = x1 + int(p[2] * s)
+        # x2 = x1 + int(p[2] * s)
+        x2 = x1 + image_p.shape[1]
         y1 = int(p[1] * s) - y0
-        y2 = y1 + int(p[3] * s)
+        # y2 = y1 + int(p[3] * s)
+        y2 = y1 + image_p.shape[0]
         # Add partition to global bbox image
         if len(image_p.shape) > 2:  # take only the first channel
             image[y1:y2, x1:x2] = image_p[:,:,0]

@@ -166,10 +166,13 @@ def render_partition_image(stack, z, bbox, width=1024, render=None,
         # y2 = y1 + int(p[3] * s)
         y2 = y1 + image_p.shape[0]
         # Add partition to global bbox image
-        if len(image_p.shape) > 2:  # take only the first channel
-            image[y1:y2, x1:x2] = image_p[:,:,0]
-        else:
-            image[y1:y2, x1:x2] = image_p
+        try:
+            if len(image_p.shape) > 2:  # take only the first channel
+                image[y1:y2, x1:x2] = image_p[:,:,0]
+            else:
+                image[y1:y2, x1:x2] = image_p
+        except ValueError as e:
+            print(e)
 
     # There are likely gaps due to rounding issues
     # Fill in the gaps with mean value

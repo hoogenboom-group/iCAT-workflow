@@ -1,12 +1,12 @@
 from setuptools import setup
 
 DISTNAME = "iCAT-workflow"
-DESCRIPTION = "Post-processing workflow for volume CLEM image data."
+DESCRIPTION = "Post-processing workflow for integrated correlative array tomography (iCAT)."
 MAINTAINER = "Ryan Lane"
 MAINTAINER_EMAIL = "r.i.lane@tudelft.nl"
 LICENSE = "LICENSE"
-URL = "https://github.com/lanery/iCAT-workflow"
-VERSION = "0.1.dev"
+URL = "https://github.com/hoogenboom-group/iCAT-workflow"
+VERSION = "0.2"
 PACKAGES = [
     "icatapi",
 ]

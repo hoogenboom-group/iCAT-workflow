@@ -9,4 +9,4 @@ from .plotting import *
 from .render_pandas import *
 from .render_transforms import *
 
-__version__ = '0.1.dev'
+__version__ = '0.2'

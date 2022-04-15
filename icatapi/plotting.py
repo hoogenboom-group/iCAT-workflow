@@ -30,6 +30,7 @@ __all__ = ['render_bbox_image',
            'plot_tile_map',
            'plot_stacks',
            'plot_neighborhoods',
+           'plot_stacks_interactive',
            'colorize',
            'T_HOECHST',
            'T_AF594',
@@ -75,11 +76,13 @@ def render_bbox_image(stack, z, bbox, width=1024, render=None,
 
     # Render image bounding box image as tif
     image = get_bb_image(stack=stack, z=z, x=x, y=y,
-                            width=w, height=h, scale=s,
-                            render=render,
-                            **renderapi_kwargs)
+                         width=w, height=h, scale=s,
+                         render=render,
+                         **renderapi_kwargs)
+
     # Sometimes it overloads the system
     if isinstance(image, RenderError):
+        # Recreate requested url
         request_url = format_preamble(
             host=render.DEFAULT_HOST,
             port=render.DEFAULT_PORT,
@@ -87,10 +90,12 @@ def render_bbox_image(stack, z, bbox, width=1024, render=None,
             project=render.DEFAULT_PROJECT,
             stack=stack) + \
             f"/z/{z:.0f}/box/{x:.0f},{y:.0f},{w:.0f},{h:.0f},{s}/png-image"
+        # Tell 'em the bad news
         print(f"Failed to load {request_url}. Trying again with partitioned bboxes.")
         # Try to render image from smaller bboxes
         image = render_partition_image(stack, z, bbox, width, render,
                                        **renderapi_kwargs)
+
     return image
 
 
@@ -109,42 +114,70 @@ def render_partition_image(stack, z, bbox, width=1024, render=None,
     # Average tile width/height
     width_ts = np.mean([tile.width for tile in tiles])
     height_ts = np.mean([tile.height for tile in tiles])
+    # Set (approximate) dimensions of partitions
+    w_p = min(400, width_ts)   # actual partition widths, heights are set
+    h_p = min(400, height_ts)  # are set a few lines later by np.diff
 
     # Get coordinates for partitions (sub-bboxes)
-    Nx_p = int(np.ceil(w/width_ts))      # num partitions in x
-    Ny_p = int(np.ceil(h/height_ts))     # num partitions in y
-    xs_p = np.arange(x, x+w, width_ts)   # x coords of partitions
-    ys_p = np.arange(y, y+h, height_ts)  # y coords of partitions
-    ws_p = np.array((width_ts,) * (Nx_p-1) + (w % width_ts,))    # partition widths
-    hs_p = np.array((height_ts,) * (Ny_p-1) + (h % height_ts,))  # partition heights
-    # Create partitions from meshgrid
-    partitions = np.array([g.ravel() for g in np.meshgrid(xs_p, ys_p)] +\
+    Nx_p = int(np.ceil(w/w_p))  # num partitions in x
+    Ny_p = int(np.ceil(h/h_p))  # num partitions in y
+    xs_p = np.linspace(x, x+w, Nx_p, dtype=int)  # x coords of partitions
+    ys_p = np.linspace(y, y+h, Ny_p, dtype=int)  # y coords of partitions
+    ws_p = np.diff(xs_p)  # partition widths
+    hs_p = np.diff(ys_p)  # partition heights
+    # Create partitions using meshgrid
+    #     [x0, y0, w0, h0]
+    #     [x1, y0, w1, h0]
+    #     [x2, y0, w2, h0] ...
+    partitions = np.array([g.ravel() for g in np.meshgrid(xs_p[:-1], ys_p[:-1])] +\
                           [g.ravel() for g in np.meshgrid(ws_p, hs_p)]).T
 
-    # Global bbox image (to stitch together partitions)
-    height = int(h/w * width)
+    # Create empty bbox image (to stitch together partitions)
+    height = int(np.round(h/w * width))
     image = np.zeros((height, width))
     # Need x, y offsets such that image starts at (0, 0)
     x0 = int(xs_p[0] * s)
     y0 = int(ys_p[0] * s)
     # Create a bbox image for each partition
-    for p in tqdm(partitions[:], leave=False):
+    for p in tqdm(partitions, leave=False):
+        # Get bbox image
         image_p = get_bb_image(stack=stack, z=z, x=p[0], y=p[1],
                                width=p[2], height=p[3], scale=s,
                                render=render,
-                               **renderapi_kwargs)[:,:,0]
+                               **renderapi_kwargs)
+
+        # Somehow it still overloads the system \_0_/
+        if isinstance(image_p, RenderError):
+            request_url = format_preamble(
+                host=render.DEFAULT_HOST,
+                port=render.DEFAULT_PORT,
+                owner=render.DEFAULT_OWNER,
+                project=render.DEFAULT_PROJECT,
+                stack=stack) + \
+                f"/z/{z:.0f}/box/{x:.0f},{y:.0f},{w:.0f},{h:.0f},{s}/png-image"
+            print(f"Failed to load {request_url}. Still fails -- wtf man.")
+            return image_p  # RenderError
+
         # Get coords for global bbox image
         x1 = int(p[0] * s) - x0
-        x2 = x1 + int(p[2] * s)
+        # x2 = x1 + int(p[2] * s)
+        x2 = x1 + image_p.shape[1]
         y1 = int(p[1] * s) - y0
-        y2 = y1 + int(p[3] * s)
-        # Pad to deal with rounding errors
-        cushion = ((y2-y1) - image_p.shape[0],
-                   (x2-x1) - image_p.shape[1])
-        image_p = np.pad(image_p, pad_width=((0, 0), (cushion)))
+        # y2 = y1 + int(p[3] * s)
+        y2 = y1 + image_p.shape[0]
         # Add partition to global bbox image
-        image[y1:y2, x1:x2] = image_p
-    return image.astype(image_p.dtype)
+        try:
+            if len(image_p.shape) > 2:  # take only the first channel
+                image[y1:y2, x1:x2] = image_p[:,:,0]
+            else:
+                image[y1:y2, x1:x2] = image_p
+        except ValueError as e:
+            print(e)
+
+    # There are likely gaps due to rounding issues
+    # Fill in the gaps with mean value
+    image = np.where(image==0, image.mean(), image).astype(image_p.dtype)
+    return image
 
 
 def render_tileset_image(stack, z, width=1024, render=None,
@@ -190,15 +223,15 @@ def render_stack_images(stack, width=1024, render=None,
     ----------
     stack : str
         Stack with which to render images for all z values
-    render : `renderapi.render.RenderClient`
-        `render-ws` instance
     width : float
         Width of rendered tileset image in pixels
-    
+    render : `renderapi.render.RenderClient`
+        `render-ws` instance
+
     Returns
     -------
-    images : list
-        List of tileset images comprising the stack
+    images : dict
+        Dictionary of tileset images comprising the stack with z value as key
     """
     # Get z values of stack
     z_values = get_z_values_for_stack(stack=stack,
@@ -230,10 +263,15 @@ def render_layer_images(stacks, z, width=1024, render=None,
         List of stacks to with which to render layer images
     z : float
         Z value of stacks at which to render layer images
-    render : `renderapi.render.RenderClient`
-        `render-ws` instance
     width : float
         Width of rendered layer images in pixels
+    render : `renderapi.render.RenderClient`
+        `render-ws` instance
+
+    Returns
+    -------
+    images : dict
+        Dictionary of tileset images comprising the layer with stack name as key
     """
     # Loop through stacks and collect images
     images = {}
@@ -466,6 +504,41 @@ def plot_neighborhoods(stacks, z_values=None, neighborhood=1, width=1024,
         ax.set_title(f"{stack}\nz = {z:.0f} | {sectionId}\n{tileId}")
         ax.set_xlabel('X [px]')
         ax.set_ylabel('Y [px]')
+
+
+def plot_stacks_interactive(z, stack_images, render=None):
+    """Plot stacks interactively (imshow) with a slider to scroll through z value
+
+    Parameters
+    ----------
+    z : scalar
+        Z value to plot
+    stack_images : dict
+        Collection of images in {stack1: {'z_n': image_n},
+                                         {'z_n+1': image_n+1},
+                                 stack2: {'z_n': image_n},
+                                         {'z_n+1': image_n+1}} form
+    """
+    # Get stack names as keys
+    stacks = list(stack_images.keys())
+    # Setup figure
+    ncols=len(stacks)
+    fig, axes = plt.subplots(ncols=ncols, sharex=True, sharey=True,
+                             squeeze=False, figsize=(7*ncols, 7))
+    # Map each stack to an axis
+    axmap = {k: v for k, v in zip(stacks, axes.flat)}
+    # Get extent from global bounds
+    bounds = np.array([list(get_stack_bounds(
+              stack=stack, render=render).values()) for stack in stacks])
+    extent = [bounds[:, 0].min(axis=0), bounds[:, 3].max(axis=0),  # minx, maxx
+              bounds[:, 1].min(axis=0), bounds[:, 4].max(axis=0)]  # miny, maxy
+    # Loop through stacks to plot images
+    for stack, images in stack_images.items():
+        cmap = 'magma' if 'EM' not in stack else 'Greys'
+        axmap[stack].imshow(images[z], origin='lower', extent=extent, cmap=cmap)
+        axmap[stack].set_title(stack)
+        axmap[stack].set_aspect('equal')
+        axmap[stack].invert_yaxis()
 
 
 def clear_image_cache():

@@ -93,10 +93,12 @@ def parse_metadata(filepath, stack=None, z=None, sectionId=None, host=HOST):
 
 def write_tif(fp, image):
     """Simple wrapper for tifffile.TiffWriter"""
-    # Convert to grey scale 16-bit image
+    # Convert to grayscale 16-bit image
+    if len(image.shape) > 2:
+        image = rgb2gray(image)
     with warnings.catch_warnings():      # Suppress precision
         warnings.simplefilter('ignore')  # loss warnings
-        image = img_as_uint(rgb2gray(image))
+        image = img_as_uint(image)
 
     # Save to disk with `TiffWriter`
     fp.parent.mkdir(parents=False, exist_ok=True)

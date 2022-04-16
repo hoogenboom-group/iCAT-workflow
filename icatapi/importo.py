@@ -87,7 +87,7 @@ def create_tile_dict(fp, d_tile=None, host=HOST):
     # Remaining tile specifications
     # -----------------------------
     # Set unique tileId
-    d_tile['tileId'] = f"{stack}-{sectionId}-{col:05d}x{row:05d}"
+    d_tile['tileId'] = f"{d_tile['stack']}-{d_tile['sectionId']}-{col:05d}x{row:05d}"
     # Parse metadata for width and height
     d_tile['width'] = int(soup.pixels['sizex'])
     d_tile['height'] = int(soup.pixels['sizey'])

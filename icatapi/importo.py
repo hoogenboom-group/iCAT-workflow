@@ -11,11 +11,6 @@ from skimage.color import rgb2gray
 from renderapi.image_pyramid import ImagePyramid, MipMapLevel
 
 
-__all__ = ['parse_metadata',
-           'write_tif',
-           'split_tif']
-
-
 # TU Delft storage server
 HOST = 'https://sonic.tnw.tudelft.nl'
 

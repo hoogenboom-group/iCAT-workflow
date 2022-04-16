@@ -10,7 +10,7 @@ from . import trakem2
 from . import utils
 
 from .plotting import *
-from render_pandas import *
+from .render_pandas import *
 from . import render_transforms
 
 

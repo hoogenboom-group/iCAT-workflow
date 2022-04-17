@@ -3,7 +3,6 @@ import pandas as pd
 
 from renderapi.render import get_stacks_by_owner_project
 from renderapi.tilespec import TileSpec, get_tile_specs_from_stack
-from renderapi.transform import AffineModel as AffineRender
 from renderapi.stack import create_stack, set_stack_state
 from renderapi.client import import_tilespecs
 

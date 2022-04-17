@@ -4,8 +4,8 @@ from bs4 import BeautifulSoup as Soup
 import numpy as np
 import pandas as pd
 from tifffile import TiffFile, TiffWriter
-from skimage.transform import pyramid_gaussian
 from skimage import util
+from skimage.transform import pyramid_gaussian
 from tifffile import TiffWriter
 
 from renderapi.image_pyramid import ImagePyramid, MipMapLevel

@@ -26,9 +26,7 @@ def get_tile_pairs_4_montage(stack, render,
         Stack from which to generate DataFrame
     render : `renderapi.render.RenderClient`
         `render-ws` instance
-    tilePairClient_kwargs : dict
-        Optional keyword arguments to pass to `tilePairClient`
-        -----------
+    tilePairClient_kwargs : dict (optional)
         stack : str
             stack from which tilepairs should be considered
         minz : str
@@ -80,8 +78,7 @@ def get_tile_pairs_4_montage(stack, render,
         DataFrame of tile pairs from a given stack
     """
     # Initialize tile pairs DataFrame
-    pairs_cols = ['stack', 'z']
-    df_pairs = pd.DataFrame(columns=pairs_cols)
+    df_pairs = pd.DataFrame(columns=['stack', 'z'])
 
     # Iterate through stack's z values
     z_values = get_z_values_for_stack(stack=stack,
@@ -133,8 +130,6 @@ def generate_point_matches(df_pairs, match_collections, sift_options, render,
     batch_size : scalar (optional)
         Number of tile pairs to include in each batch
     pointMatchClient_kwargs : dict
-        Optional keyword arguments to pass to `pointMatchClient`
-        -----------
         stack : str
             stack containing the tiles
         stack2 : str
@@ -216,9 +211,6 @@ def generate_point_matches(df_pairs, match_collections, sift_options, render,
             with WithPool(N_cores) as pool:
                 pool.map(point_match_client_partial, zip(tp_batch, sift_options_batch))
 
-
-def remove_island_tiles():
-    pass
 
 
 # TODO: make this function work

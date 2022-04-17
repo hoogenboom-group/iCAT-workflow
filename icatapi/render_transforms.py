@@ -5,7 +5,7 @@ from matplotlib.transforms import Affine2D as AffineMPL
 from renderapi.stack import get_stack_bounds
 from renderapi.transform import AffineModel as AffineRender
 
-from .render_pandas import create_stack_DataFrame, create_stack_from_DataFrame
+from .render_pandas import create_stack_DataFrame, upload_stack_DataFrame
 
 
 __all__ = ['AffineMPL_2_AffineRender',
@@ -71,14 +71,14 @@ def scale_stack(stack_in, stack_out=None, sx=1.0, sy=1.0,
     stack_out = stack_out if stack_out is not None else stack_in
 
     # Create scaled stack
-    create_stack_from_DataFrame(df=df_stack,
-                                name=stack_out,
-                                render=render)
+    upload_stack_DataFrame(df=df_stack,
+                           name=stack_out,
+                           render=render)
 
 
 def rotate_stack(stack_in, stack_out=None, r=0,
                  render=None):
-    """Rotate stack by an arbitrary rotation
+    """Rotate stack by an arbitrary rotation angle
 
     Parameters
     ----------
@@ -94,7 +94,7 @@ def rotate_stack(stack_in, stack_out=None, r=0,
     df_stack = create_stack_DataFrame(stack=stack_in,
                                       render=render)
 
-    # Create scaling transform
+    # Create rotation transform
     T = AffineMPL().rotate(r)
     A = AffineRender()
     A.M = T.get_matrix()
@@ -107,9 +107,9 @@ def rotate_stack(stack_in, stack_out=None, r=0,
     stack_out = stack_out if stack_out is not None else stack_in
 
     # Create scaled stack
-    create_stack_from_DataFrame(df=df_stack,
-                                name=stack_out,
-                                render=render)
+    upload_stack_DataFrame(df=df_stack,
+                           name=stack_out,
+                           render=render)
 
 
 def translate_stack(stack_in, stack_out=None, tx=0.0, ty=0.0,
@@ -145,9 +145,9 @@ def translate_stack(stack_in, stack_out=None, tx=0.0, ty=0.0,
     stack_out = stack_out if stack_out is not None else stack_in
 
     # Create scaled stack
-    create_stack_from_DataFrame(df=df_stack,
-                                name=stack_out,
-                                render=render)
+    upload_stack_DataFrame(df=df_stack,
+                           name=stack_out,
+                           render=render)
 
 
 def transform_stack(stack_in, stack_out=None, T=None,
@@ -187,6 +187,6 @@ def transform_stack(stack_in, stack_out=None, T=None,
     stack_out = stack_out if stack_out is not None else stack_in
 
     # Create scaled stack
-    create_stack_from_DataFrame(df=df_stack,
-                                name=stack_out,
-                                render=render)
+    upload_stack_DataFrame(df=df_stack,
+                           name=stack_out,
+                           render=render)

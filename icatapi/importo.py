@@ -1,12 +1,12 @@
 import re
-import warnings
-import xml.etree.ElementTree as ET
-
-import pandas as pd
 from bs4 import BeautifulSoup as Soup
+
+import numpy as np
+import pandas as pd
 from tifffile import TiffFile, TiffWriter
-from skimage import img_as_uint
-from skimage.color import rgb2gray
+from skimage.transform import pyramid_gaussian
+from skimage import util
+from tifffile import TiffWriter
 
 from renderapi.image_pyramid import ImagePyramid, MipMapLevel
 
@@ -93,3 +93,60 @@ def create_tile_dict(fp, d_tile=None, host=HOST):
     d_tile['tforms'] = []
 
     return d_tile
+
+
+def create_mipmaps(dir_out, image, metadata=None, dtype=np.uint16, invert=False,
+                   downscale=2, max_layer=8, preserve_range=True,
+                   **pyramid_kwargs):
+    """Generates and writes an image pyramid to disk (mipmaps)
+
+    Parameters
+    ----------
+    dir_out : `pathlib.Path`
+        Output directory for mipmaps
+        Individual mipmaps are saved as `dir_out/level.tif`
+    image : ndarray
+        Base image of the pyramid
+    metadata : str or encoded bytes (optional)
+        Description of the image as 7-bit ASCII
+        In practice this is the ome-xml metadata written by Odemis
+        Passed (confusingly) to `description` argument of TiffWriter.save
+    dtype : dtype (optional)
+        The type of the output array
+    invert : bool
+        Whether to invert the contrast
+    downscale : scalar (optional)
+        Downscale factor
+    max_layer : scalar (optional)
+        Number of layers for the pyramid
+    preserve_range : bool (optional)
+        Whether to keep the original range of values
+    pyramid_kwargs : dict (optional)
+        Additional keyword arguments passed to `skimage.transform.pyramid_gaussian`
+
+    Notes
+    -----
+    * Currently only writes .tif files
+    """
+    # Conditionally invert contrast
+    if invert:
+        image = util.invert(image)
+
+    # Create image pyramid
+    pyramid = pyramid_gaussian(image,
+                               downscale=downscale,
+                               max_layer=max_layer,
+                               preserve_range=preserve_range,
+                               **pyramid_kwargs)
+    # Format pyramid as dict {0: image, 1: image//2, 2: image//4}
+    d_pyramid = {level: mipmap.astype(dtype) for level, mipmap in enumerate(pyramid)}    
+
+    # Write mipmaps to disk
+    for level, mipmap in d_pyramid.items():
+        # Only write metadata to level 0 mipmap
+        if level != 0:
+            metadata = None
+        # Set filepath for mipmap
+        fp = dir_out / f"{int(level)}.tif"
+        with TiffWriter(fp.as_posix()) as _tif:
+            _tif.save(mipmap, description=metadata)

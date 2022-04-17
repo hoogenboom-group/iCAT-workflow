@@ -2,6 +2,9 @@ import numpy as np
 from skimage import color, exposure
 
 
+__all__ = ['colorize']
+
+
 def colorize(image, T):
     """Colorize image
     Parameters

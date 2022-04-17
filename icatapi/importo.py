@@ -95,18 +95,18 @@ def create_tile_dict(fp, d_tile=None, host=HOST):
     return d_tile
 
 
-def create_mipmaps(dir_out, image, metadata=None, dtype=np.uint16, invert=False,
+def create_mipmaps(image, dir_out, metadata=None, dtype=np.uint16, invert=False,
                    downscale=2, max_layer=8, preserve_range=True,
                    **pyramid_kwargs):
     """Generates and writes an image pyramid to disk (mipmaps)
 
     Parameters
     ----------
+    image : ndarray
+        Base image of the pyramid
     dir_out : `pathlib.Path`
         Output directory for mipmaps
         Individual mipmaps are saved as `dir_out/level.tif`
-    image : ndarray
-        Base image of the pyramid
     metadata : str or encoded bytes (optional)
         Description of the image as 7-bit ASCII
         In practice this is the ome-xml metadata written by Odemis

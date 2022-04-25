@@ -486,20 +486,22 @@ def plot_matches_within_section(df_matches, direction, width=200, height=200):
         source = df_matches.loc[df_matches['pr'] == df_matches['qr']]\
                            .copy()
         source['pqc'] = source.loc[:, ['pc', 'qc']].min(axis=1)
-        source.loc[source['N'] == 0, 'N'] = np.nan
+        # Create base of chart
+        base = alt.Chart(source).encode(
+            x='pqc:O',
+            y='pr:O')
 
     # Filter point matches DataFrame to North-South (TOP, BOTTOM) tile pairs
     else:
         source = df_matches.loc[df_matches['pc'] == df_matches['qc']]\
                            .copy()
         source['pqr'] = source.loc[:, ['pr', 'qr']].min(axis=1)
-        source.loc[source['N'] == 0, 'N'] = np.nan
+        # Create base of chart
+        base = alt.Chart(source).encode(
+            x='pc:O',
+            y='pqr:O')
 
     # Make heatmap
-    base = alt.Chart(source).encode(
-        x='pqc:O',
-        y='pr:O'
-    )
     heatmap = base.mark_rect().encode(
         color=alt.Color('N:Q'),
     ).properties(

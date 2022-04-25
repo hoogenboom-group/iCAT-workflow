@@ -479,7 +479,7 @@ def plot_matches_within_section(df_matches, direction, width=200, height=200):
     Returns
     -------
     chart : `alt.FacetChart`
-        Plot of 
+        (altair) plot of point matches within each section
     """
     # Source of data for altair chart
     source = df_matches.loc[df_matches['pr'] == df_matches['qr']]\

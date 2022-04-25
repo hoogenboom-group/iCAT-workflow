@@ -1,14 +1,14 @@
 import requests
 from itertools import product
-from tqdm.notebook import tqdm
 
+from tqdm.notebook import tqdm
 import numpy as np
+import altair as alt
 from seaborn import color_palette
-from shapely.geometry import box
-from shapely import affinity
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
-from skimage import color, exposure
+from shapely.geometry import box
+from shapely import affinity
 
 from renderapi.render import format_preamble
 from renderapi.stack import (get_stack_bounds,
@@ -30,6 +30,12 @@ __all__ = ['render_bbox_image',
            'plot_stacks',
            'plot_neighborhoods',
            'plot_stacks_interactive']
+
+
+def clear_image_cache():
+    url = 'https://sonic.tnw.tudelft.nl/render-ws/v1/imageProcessorCache/allEntries'
+    response = requests.delete(url)
+    return response
 
 
 def render_bbox_image(stack, z, bbox, width=1024, render=None,
@@ -455,7 +461,57 @@ def plot_stacks_interactive(z, stack_images, render=None):
         axmap[stack].invert_yaxis()
 
 
-def clear_image_cache():
-    url = 'https://sonic.tnw.tudelft.nl/render-ws/v1/imageProcessorCache/allEntries'
-    response = requests.delete(url)
-    return response
+def plot_matches_within_section(df_matches, direction, width=200, height=200):
+    """Plot point matches within each section
+
+    Parameters
+    ----------
+    df_matches : pd.DataFrame
+        DataFrame of point matches from a given stack (or stacks)
+    direction : str
+        Direction along which to plot point matches
+        Can either be EAST-WEST or NORTH-SOUTH
+    width : scalar (optional)
+        Width of each subplot
+    height : scalar (optional)
+        Height of each subplot
+
+    Returns
+    -------
+    chart : `alt.FacetChart`
+        Plot of 
+    """
+    # Source of data for altair chart
+    source = df_matches.loc[df_matches['pr'] == df_matches['qr']]\
+                       .copy()
+
+    # Filter point matches DataFrame to East-West (LEFT, RIGHT) tile pairs
+    if direction.lower() in ['ew', 'east-west', 'left-right']:
+        source['pqc'] = source.loc[:, ['pc', 'qc']].min(axis=1)
+        source.loc[source['N'] == 0, 'N'] = np.nan
+
+    # Filter point matches DataFrame to North-South (TOP, BOTTOM) tile pairs
+    else:
+        source['pqr'] = source.loc[:, ['pr', 'qr']].min(axis=1)
+        source.loc[source['N'] == 0, 'N'] = np.nan
+
+    # Make heatmap
+    base = alt.Chart(source).encode(
+        x='pqc:O',
+        y='pr:O'
+    )
+    heatmap = base.mark_rect().encode(
+        color=alt.Color('N:Q'),
+    ).properties(
+        width=width,
+        height=height
+    )
+    text = base.mark_text(baseline='middle').encode(
+        text='N:Q',
+    )
+    # Facet heatmaps across sections and montage stacks
+    heatmap = alt.layer(heatmap, text, data=source).facet(
+        column=r'pGroupId:N',
+        row='stack:N'
+    )
+    return heatmap

@@ -481,17 +481,17 @@ def plot_matches_within_section(df_matches, direction, width=200, height=200):
     chart : `alt.FacetChart`
         (altair) plot of point matches within each section
     """
-    # Source of data for altair chart
-    source = df_matches.loc[df_matches['pr'] == df_matches['qr']]\
-                       .copy()
-
     # Filter point matches DataFrame to East-West (LEFT, RIGHT) tile pairs
     if direction.lower() in ['ew', 'east-west', 'left-right']:
+        source = df_matches.loc[df_matches['pr'] == df_matches['qr']]\
+                           .copy()
         source['pqc'] = source.loc[:, ['pc', 'qc']].min(axis=1)
         source.loc[source['N'] == 0, 'N'] = np.nan
 
     # Filter point matches DataFrame to North-South (TOP, BOTTOM) tile pairs
     else:
+        source = df_matches.loc[df_matches['pc'] == df_matches['qc']]\
+                           .copy()
         source['pqr'] = source.loc[:, ['pr', 'qr']].min(axis=1)
         source.loc[source['N'] == 0, 'N'] = np.nan
 

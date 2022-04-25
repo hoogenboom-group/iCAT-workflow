@@ -7,13 +7,8 @@ from tqdm.notebook import tqdm
 
 from renderapi.client import (tilePairClient, pointMatchClient,
                               SiftPointMatchOptions, WithPool)
-from renderapi.stack import get_z_values_for_stack
-from renderapi.pointmatch import get_matches_within_group
-
-
-__all__ = ['get_tile_pairs_4_montage',
-           'generate_point_matches']
-        #    'get_matches_within_section'
+from renderapi.stack import get_z_values_for_stack, get_section_z_value
+from renderapi.pointmatch import get_matches_within_group, get_match_groupIds
 
 
 def get_tile_pairs_4_montage(stack, render,
@@ -212,43 +207,78 @@ def generate_point_matches(df_pairs, match_collections, sift_options, render,
                 pool.map(point_match_client_partial, zip(tp_batch, sift_options_batch))
 
 
+def get_matches_within_section(sectionId, match_collection, render):
+    """Wrapper for renderapi.pointmatches.get_matches_within_group
 
-# TODO: make this function work
-# def get_matches_within_section(match_collection, sectionId, render):
-#     """Create DataFrame of point matches for a given section
+    Parameters
+    ----------
+    sectionId : str
+        Section name (aka `groupId` in `renderapi` terminology)
+    match_collection : str
+        Name of match collection
+    render : `renderapi.render.RenderClient`
+        `render-ws` instance
 
-#     Parameters
-#     ----------
-#     match_collection : str
-#         Name of match collection
-#     sectionId : str
-#         Name of section
-#         Aka `groupId` in `renderapi` terminology
-#     render : `renderapi.render.RenderClient`
-#         `render-ws` instance
+    Returns
+    -------
+    df_matches : `pd.DataFrame`
+        DataFrame of point matches from a given section
+    """
+    # Get z value from sectionId
+    z = get_section_z_value(stack=stack,
+                            sectionId=sectionId,
+                            render=render)
+    # Get matches within section
+    matches_json = get_matches_within_group(matchCollection=match_collection,
+                                            groupId=sectionId,
+                                            render=render)
+    # Convert json data to DataFrame and add z value
+    df = pd.json_normalize(matches_json)
+    df['z'] = z
+    return df.rename(columns={'matchCount': 'N'})
 
-#     Returns
-#     -------
-#     df_matches : `pd.DataFrame`
-#         DataFrame of point matches from a given section
-#     """
-#     # Initialize point matches DataFrame
-#     matches_cols = ['pc', 'pr', 'qc', 'qr', 'N_matches']
-#     df_matches = pd.DataFrame(columns=matches_cols)
 
-#     # Get point match data as json via `renderapi`
-#     matches_json = get_matches_within_group(matchCollection=match_collection,
-#                                             groupId=sectionId,
-#                                             render=render)
-#     # Create DataFrame from json and concatenate with point matches DataFrame
-#     df_matches = pd.concat([df_matches, json_normalize(matches_json)],
-#                            axis=1, sort=False)
+def get_matches_within_stack(stack, match_collection, render):
+    """Collect point matches across each section in a stack
 
-#     # Populate DataFrame with row, column and number of matches data
-#     df_matches[['pc', 'pr']] = np.stack(df_matches['pId'].apply(lambda x:\
-#                                    [int(i) for i in re.findall(r'\d+', x)[-2:]]))
-#     df_matches[['qc', 'qr']] = np.stack(df_matches['qId'].apply(lambda x:\
-#                                    [int(i) for i in re.findall(r'\d+', x)[-2:]]))
-#     df_matches['N_matches'] = df_matches['matches.p'].apply(lambda x:\
-#                                   np.array(x).shape[1])
-#     return df_matches
+    Parameters
+    ----------
+    stack : str
+        Stack name
+    match_collection : str
+        Name of match collection
+    render : `renderapi.render.RenderClient`
+        `render-ws` instance
+
+    Returns
+    -------
+    df_matches : `pd.DataFrame`
+        DataFrame of point matches from a given section
+    """
+    # Initialize DataFrame for point matches
+    df_matches = pd.DataFrame(columns=['stack', 'z',
+                                       'pGroupId', 'pId', 'pc', 'pr',
+                                       'qGroupId', 'qId', 'qc', 'qr'])
+
+    # Get sectionIds per stack
+    sectionIds = renderapi.pointmatch.get_match_groupIds(matchCollection=match_collection,
+                                                         render=render)
+    # Loop through sectionIds
+    for sectionId in tqdm(sectionIds, leave=False):
+
+        # Get matches within section
+        df = get_matches_within_section(match_collection=match_collection,
+                                        sectionId=sectionId,
+                                        render=render)
+        # Aggregate matches
+        df_matches = pd.concat([df_matches, df])
+
+    # Format DataFrame
+    df_matches['stack'] = stack
+    # Add row/col indices
+    df_matches[['pc', 'pr']] = np.stack(df_matches['pId'].apply(lambda x:\
+                                        [int(i) for i in re.findall(r'\d+', x)[-2:]]))
+    df_matches[['qc', 'qr']] = np.stack(df_matches['qId'].apply(lambda x:\
+                                        [int(i) for i in re.findall(r'\d+', x)[-2:]]))
+
+    return df_matches

@@ -253,7 +253,7 @@ def get_matches_within_stack(stack, match_collection, render):
     Returns
     -------
     df_matches : `pd.DataFrame`
-        DataFrame of point matches from a given section
+        DataFrame of point matches from a given stack
     """
     # Initialize DataFrame for point matches
     df_matches = pd.DataFrame(columns=['stack', 'z',
@@ -267,8 +267,9 @@ def get_matches_within_stack(stack, match_collection, render):
     for sectionId in tqdm(sectionIds, leave=False):
 
         # Get matches within section
-        df = get_matches_within_section(match_collection=match_collection,
+        df = get_matches_within_section(stack=stack,
                                         sectionId=sectionId,
+                                        match_collection=match_collection,
                                         render=render)
         # Aggregate matches
         df_matches = pd.concat([df_matches, df])
@@ -280,5 +281,4 @@ def get_matches_within_stack(stack, match_collection, render):
                                         [int(i) for i in re.findall(r'\d+', x)[-2:]]))
     df_matches[['qc', 'qr']] = np.stack(df_matches['qId'].apply(lambda x:\
                                         [int(i) for i in re.findall(r'\d+', x)[-2:]]))
-
     return df_matches

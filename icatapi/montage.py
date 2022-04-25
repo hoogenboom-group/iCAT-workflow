@@ -207,7 +207,7 @@ def generate_point_matches(df_pairs, match_collections, sift_options, render,
                 pool.map(point_match_client_partial, zip(tp_batch, sift_options_batch))
 
 
-def get_matches_within_section(sectionId, match_collection, render):
+def get_matches_within_section(stack, sectionId, match_collection, render):
     """Wrapper for renderapi.pointmatches.get_matches_within_group
 
     Parameters
@@ -261,8 +261,8 @@ def get_matches_within_stack(stack, match_collection, render):
                                        'qGroupId', 'qId', 'qc', 'qr'])
 
     # Get sectionIds per stack
-    sectionIds = renderapi.pointmatch.get_match_groupIds(matchCollection=match_collection,
-                                                         render=render)
+    sectionIds = get_match_groupIds(matchCollection=match_collection,
+                                    render=render)
     # Loop through sectionIds
     for sectionId in tqdm(sectionIds, leave=False):
 

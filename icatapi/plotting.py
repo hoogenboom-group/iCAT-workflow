@@ -21,7 +21,8 @@ from renderapi.errors import RenderError
 from .render_pandas import create_stacks_DataFrame
 
 
-__all__ = ['render_bbox_image',
+__all__ = ['clear_image_cache',
+           'render_bbox_image',
            'render_tileset_image',
            'render_layer_images',
            'render_stack_images',
@@ -29,7 +30,8 @@ __all__ = ['render_bbox_image',
            'plot_tile_map',
            'plot_stacks',
            'plot_neighborhoods',
-           'plot_stacks_interactive']
+           'plot_stacks_interactive',
+           'plot_matches_within_section']
 
 
 def clear_image_cache():

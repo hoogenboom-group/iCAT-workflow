@@ -12,7 +12,7 @@ from renderapi.stack import get_z_values_for_stack
 from .montage import run_point_match_client
 
 
-__all__ = ['get_tile_pairs_4_alignment']
+__all__ = ['delete_match_collection']
 
 
 def get_tile_pairs_4_alignment(stack, render,

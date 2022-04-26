@@ -95,7 +95,8 @@ def get_tile_pairs_4_montage(stack, render,
     return df_pairs.reset_index(drop=True)
 
 
-def run_point_match_client(data, stack, collection, render, **pointMatchClient_kwargs):
+def run_point_match_client(data, stack, collection, render,
+                           **pointMatchClient_kwargs):
     """Point match client wrapper for use in multiprocessing"""
     tile_pair_batch, sift_options = data
     pointMatchClient(stack=stack,

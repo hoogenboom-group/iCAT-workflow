@@ -108,7 +108,7 @@ def run_point_match_client(data, stack, collection, render,
 
 
 def generate_point_matches(df_pairs, match_collections, sift_options, render,
-                           N_cores=25, batch_size=12, **pointMatchClient_kwargs):
+                           N_cores=4, batch_size=12, **pointMatchClient_kwargs):
     """Generate point matches for a set of tile pairs
 
     Parameters

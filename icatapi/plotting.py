@@ -31,7 +31,8 @@ __all__ = ['clear_image_cache',
            'plot_stacks',
            'plot_neighborhoods',
            'plot_stacks_interactive',
-           'plot_matches_within_section']
+           'plot_matches_within_section',
+           'plot_matches_across_sections']
 
 
 def clear_image_cache():

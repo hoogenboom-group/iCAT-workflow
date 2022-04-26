@@ -519,3 +519,54 @@ def plot_matches_within_section(df_matches, direction, width=200, height=200):
         row='stack:N'
     )
     return heatmap
+
+
+def plot_matches_across_sections(df_matches, width=200, height=200):
+    """Plot point matches within each section
+
+    Parameters
+    ----------
+    df_matches : pd.DataFrame
+        DataFrame of point matches from a given stack (or stacks)
+    width : scalar (optional)
+        Width of each subplot
+    height : scalar (optional)
+        Height of each subplot
+
+    Returns
+    -------
+    chart : `alt.FacetChart`
+        (altair) plot of point matches within each section
+    """
+    # Filter DataFrame of point matches to cross section tile pairs
+    source = df_matches.loc[df_matches['pGroupId'] != df_matches['qGroupId']].copy()
+    # Add column specifying section pair
+    source['sections'] = [f"{pId} -- {qId}" for (pId, qId) in\
+                          zip(source['pGroupId'], source['qGroupId'])]
+
+    # Initialize chart by attempting to make a heatmap along rows, cols
+    if ('pc' in df_matches) and ('pr' in df_matches):
+        base = alt.Chart(source).encode(
+            x='pc:N',
+            y='pr:N'
+        )
+    # Rough alignment matches may not have 'pc', 'pr' data
+    else:
+        base = alt.Chart(source)
+
+    # Create heatmap from base
+    heatmap = base.mark_rect().encode(
+        color=alt.Color('N:Q'),
+    ).properties(
+        width=width,
+        height=height
+    )
+    text = base.mark_text(baseline='middle').encode(
+        text='N:Q',
+    )
+    # Facet heatmaps across sections and montage stacks
+    heatmap = alt.layer(heatmap, text, data=source).facet(
+        row='stack:N',
+        column='sections:N',
+    )
+    return heatmap

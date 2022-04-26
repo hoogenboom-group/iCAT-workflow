@@ -113,7 +113,7 @@ def generate_point_matches(df_pairs, match_collections, sift_options, render,
     Parameters
     ----------
     df_pairs : `pd.DataFrame`
-        DataFrame of tile pairs from a given stack
+        DataFrame of tile pairs from a given stack (or stacks)
     match_collections : dict
         Mapping of stack names to names of
         e.g. {'lil_EM': 'zebrafish_lil_EM_points',

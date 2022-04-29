@@ -22,7 +22,7 @@ def AffineMPL_2_AffineRender(T):
     return A
 
 
-def scale_stack(stack_in, stack_out=None, sx=1.0, sy=1.0,
+def scale_stack(stack_in, stack_out=None, sx=1.0, sy=1.0, translate=False,
                 render=None):
     """Scale stack by an arbitrary scale factor
 
@@ -37,6 +37,8 @@ def scale_stack(stack_in, stack_out=None, sx=1.0, sy=1.0,
         x scale factor
     sy : float
         y scale factor
+    translate : bool
+        Whether to reposition the stack such that (minX, minY) = (0, 0)
     """
     # Create DataFrame for input stack
     df_stack = create_stack_DataFrame(stack=stack_in,
@@ -65,7 +67,10 @@ def scale_stack(stack_in, stack_out=None, sx=1.0, sy=1.0,
                           B1=ty)
 
         # Add transform to tile
-        df_stack.at[i, 'tforms'] += [T1, S, T2]
+        if translate:
+            df_stack.at[i, 'tforms'] += [T1, S, T2]
+        else:
+            df_stack.at[i, 'tforms'] += [S]
 
     # Set output stack name
     stack_out = stack_out if stack_out is not None else stack_in

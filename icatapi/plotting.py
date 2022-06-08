@@ -1,43 +1,44 @@
 import requests
 from itertools import product
-from tqdm.notebook import tqdm
 
+from tqdm.notebook import tqdm
 import numpy as np
+import altair as alt
 from seaborn import color_palette
-from shapely.geometry import box
-from shapely import affinity
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
-from skimage import color, exposure
+from shapely.geometry import box
+from shapely import affinity
 
 from renderapi.render import format_preamble
 from renderapi.stack import (get_stack_bounds,
                              get_bounds_from_z,
                              get_z_values_for_stack)
-from renderapi.tilespec import get_tile_spec, get_tile_specs_from_box
+from renderapi.tilespec import get_tile_spec
 from renderapi.image import get_bb_image
 from renderapi.errors import RenderError
 
 from .render_pandas import create_stacks_DataFrame
 
 
-__all__ = ['render_bbox_image',
-           'render_partition_image',
+__all__ = ['clear_image_cache',
+           'render_bbox_image',
            'render_tileset_image',
-           'render_stack_images',
            'render_layer_images',
+           'render_stack_images',
            'render_neighborhood_image',
            'plot_tile_map',
            'plot_stacks',
            'plot_neighborhoods',
            'plot_stacks_interactive',
-           'colorize',
-           'T_HOECHST',
-           'T_AF594',
-           'T_RED',
-           'T_GREEN',
-           'T_BLUE',
-           'T_YELLOW']
+           'plot_matches_within_section',
+           'plot_matches_across_sections']
+
+
+def clear_image_cache():
+    url = 'https://sonic.tnw.tudelft.nl/render-ws/v1/imageProcessorCache/allEntries'
+    response = requests.delete(url)
+    return response
 
 
 def render_bbox_image(stack, z, bbox, width=1024, render=None,
@@ -72,7 +73,7 @@ def render_bbox_image(stack, z, bbox, width=1024, render=None,
     y = bbox[1]
     w = bbox[2] - bbox[0]
     h = bbox[3] - bbox[1]
-    s = width / (bbox[2] - bbox[0])
+    s = np.round(width / (bbox[2] - bbox[0]), decimals=6)
 
     # Render image bounding box image as tif
     image = get_bb_image(stack=stack, z=z, x=x, y=y,
@@ -91,92 +92,8 @@ def render_bbox_image(stack, z, bbox, width=1024, render=None,
             stack=stack) + \
             f"/z/{z:.0f}/box/{x:.0f},{y:.0f},{w:.0f},{h:.0f},{s}/png-image"
         # Tell 'em the bad news
-        print(f"Failed to load {request_url}. Trying again with partitioned bboxes.")
-        # Try to render image from smaller bboxes
-        image = render_partition_image(stack, z, bbox, width, render,
-                                       **renderapi_kwargs)
+        print(f"Failed to load {request_url}.")
 
-    return image
-
-
-def render_partition_image(stack, z, bbox, width=1024, render=None,
-                           **renderapi_kwargs):
-    """Renders a bbox image from partitions"""
-    # Unpack bbox
-    x = bbox[0]
-    y = bbox[1]
-    w = bbox[2] - bbox[0]
-    h = bbox[3] - bbox[1]
-    s = width / (bbox[2] - bbox[0])
-
-    # Get tiles in bbox
-    tiles = get_tile_specs_from_box(stack, z, x, y, w, h, s, render=render)
-    # Average tile width/height
-    width_ts = np.mean([tile.width for tile in tiles])
-    height_ts = np.mean([tile.height for tile in tiles])
-    # Set (approximate) dimensions of partitions
-    w_p = min(400, width_ts)   # actual partition widths, heights are set
-    h_p = min(400, height_ts)  # are set a few lines later by np.diff
-
-    # Get coordinates for partitions (sub-bboxes)
-    Nx_p = int(np.ceil(w/w_p))  # num partitions in x
-    Ny_p = int(np.ceil(h/h_p))  # num partitions in y
-    xs_p = np.linspace(x, x+w, Nx_p, dtype=int)  # x coords of partitions
-    ys_p = np.linspace(y, y+h, Ny_p, dtype=int)  # y coords of partitions
-    ws_p = np.diff(xs_p)  # partition widths
-    hs_p = np.diff(ys_p)  # partition heights
-    # Create partitions using meshgrid
-    #     [x0, y0, w0, h0]
-    #     [x1, y0, w1, h0]
-    #     [x2, y0, w2, h0] ...
-    partitions = np.array([g.ravel() for g in np.meshgrid(xs_p[:-1], ys_p[:-1])] +\
-                          [g.ravel() for g in np.meshgrid(ws_p, hs_p)]).T
-
-    # Create empty bbox image (to stitch together partitions)
-    height = int(np.round(h/w * width))
-    image = np.zeros((height, width))
-    # Need x, y offsets such that image starts at (0, 0)
-    x0 = int(xs_p[0] * s)
-    y0 = int(ys_p[0] * s)
-    # Create a bbox image for each partition
-    for p in tqdm(partitions, leave=False):
-        # Get bbox image
-        image_p = get_bb_image(stack=stack, z=z, x=p[0], y=p[1],
-                               width=p[2], height=p[3], scale=s,
-                               render=render,
-                               **renderapi_kwargs)
-
-        # Somehow it still overloads the system \_0_/
-        if isinstance(image_p, RenderError):
-            request_url = format_preamble(
-                host=render.DEFAULT_HOST,
-                port=render.DEFAULT_PORT,
-                owner=render.DEFAULT_OWNER,
-                project=render.DEFAULT_PROJECT,
-                stack=stack) + \
-                f"/z/{z:.0f}/box/{x:.0f},{y:.0f},{w:.0f},{h:.0f},{s}/png-image"
-            print(f"Failed to load {request_url}. Still fails -- wtf man.")
-            return image_p  # RenderError
-
-        # Get coords for global bbox image
-        x1 = int(p[0] * s) - x0
-        # x2 = x1 + int(p[2] * s)
-        x2 = x1 + image_p.shape[1]
-        y1 = int(p[1] * s) - y0
-        # y2 = y1 + int(p[3] * s)
-        y2 = y1 + image_p.shape[0]
-        # Add partition to global bbox image
-        try:
-            if len(image_p.shape) > 2:  # take only the first channel
-                image[y1:y2, x1:x2] = image_p[:,:,0]
-            else:
-                image[y1:y2, x1:x2] = image_p
-        except ValueError as e:
-            print(e)
-
-    # There are likely gaps due to rounding issues
-    # Fill in the gaps with mean value
-    image = np.where(image==0, image.mean(), image).astype(image_p.dtype)
     return image
 
 
@@ -273,21 +190,31 @@ def render_layer_images(stacks, z, width=1024, render=None,
     images : dict
         Dictionary of tileset images comprising the layer with stack name as key
     """
+    # Get bbox of layer from bounds of each stack
+    boundss = []
+    for stack in stacks:
+        bounds = get_bounds_from_z(stack=stack, z=z, render=render)
+        boundss.append(bounds)
+    bbox = [min([bounds['minX'] for bounds in boundss]),
+            min([bounds['minY'] for bounds in boundss]),
+            max([bounds['maxX'] for bounds in boundss]),
+            max([bounds['maxY'] for bounds in boundss])]
+
     # Loop through stacks and collect images
     images = {}
     for stack in tqdm(stacks, leave=False):
-        image = render_tileset_image(stack=stack,
-                                     z=z,
-                                     width=width,
-                                     render=render,
-                                     **renderapi_kwargs)
+        image = render_bbox_image(stack=stack,
+                                  z=z,
+                                  bbox=bbox,
+                                  width=width,
+                                  render=render,
+                                  **renderapi_kwargs)
         images[stack] = image
     return images
 
 
 def render_neighborhood_image(stack, tileId, neighborhood=1, width=1024,
-                              render=None, return_bbox=False,
-                              **renderapi_kwargs):
+                              render=None, **renderapi_kwargs):
     """Renders an image of the local neighborhood surrounding a tile
 
     Parameters
@@ -303,7 +230,7 @@ def render_neighborhood_image(stack, tileId, neighborhood=1, width=1024,
     render : `renderapi.render.RenderClient`
         `render-ws` instance
     """
-    # Make alias for neighborhood
+    # Alias for neighborhood
     N = neighborhood
 
     # Get bounding box of specified tile
@@ -326,11 +253,7 @@ def render_neighborhood_image(stack, tileId, neighborhood=1, width=1024,
                               width=width,
                               render=render,
                               **renderapi_kwargs)
-    
-    if return_bbox:
-        return image, bbox_neighborhood
-    else:
-        return image
+    return image
 
 
 
@@ -541,55 +464,110 @@ def plot_stacks_interactive(z, stack_images, render=None):
         axmap[stack].invert_yaxis()
 
 
-def clear_image_cache():
-    url = 'https://sonic.tnw.tudelft.nl/render-ws/v1/imageProcessorCache/allEntries'
-    response = requests.delete(url)
-    return response
+def plot_matches_within_section(df_matches, direction, width=200, height=200):
+    """Plot point matches within each section
 
-
-def colorize(image, T):
-    """Colorize image
     Parameters
     ----------
-    image : (M, N) array
+    df_matches : pd.DataFrame
+        DataFrame of point matches from a given stack (or stacks)
+    direction : str
+        Direction along which to plot point matches
+        Can either be EAST-WEST or NORTH-SOUTH
+    width : scalar (optional)
+        Width of each subplot
+    height : scalar (optional)
+        Height of each subplot
+
     Returns
     -------
-    rescaled : rgba float array
-        Color transformed image
+    chart : `alt.FacetChart`
+        (altair) plot of point matches within each section
     """
-    # Convert to rgba
-    rgba = color.gray2rgba(image, alpha=True)
-    # Apply transform
-    transformed = np.dot(rgba, T)
-    rescaled = exposure.rescale_intensity(transformed)
-    return rescaled
+    # Filter point matches DataFrame to East-West (LEFT, RIGHT) tile pairs
+    if direction.lower() in ['ew', 'east-west', 'left-right']:
+        source = df_matches.loc[df_matches['pr'] == df_matches['qr']]\
+                           .copy()
+        source['pqc'] = source.loc[:, ['pc', 'qc']].min(axis=1)
+        # Create base of chart
+        base = alt.Chart(source).encode(
+            x='pqc:O',
+            y='pr:O')
+
+    # Filter point matches DataFrame to North-South (TOP, BOTTOM) tile pairs
+    else:
+        source = df_matches.loc[df_matches['pc'] == df_matches['qc']]\
+                           .copy()
+        source['pqr'] = source.loc[:, ['pr', 'qr']].min(axis=1)
+        # Create base of chart
+        base = alt.Chart(source).encode(
+            x='pc:O',
+            y='pqr:O')
+
+    # Make heatmap
+    heatmap = base.mark_rect().encode(
+        color=alt.Color('N:Q'),
+    ).properties(
+        width=width,
+        height=height
+    )
+    text = base.mark_text(baseline='middle').encode(
+        text='N:Q',
+    )
+    # Facet heatmaps across sections and montage stacks
+    heatmap = alt.layer(heatmap, text, data=source).facet(
+        column=r'pGroupId:N',
+        row='stack:N'
+    )
+    return heatmap
 
 
-# Color transformations
-# ---------------------
-# Labels
-T_HOECHST = [[0.2, 0.0, 0.0, 0.2],  # blueish
-             [0.0, 0.2, 0.0, 0.2],
-             [0.0, 0.0, 1.0, 1.0],
-             [0.0, 0.0, 0.0, 0.0]]
-T_AF594 = [[1.0, 0.0, 0.0, 1.0],  # orangeish
-           [0.0, 0.6, 0.0, 0.6],
-           [0.0, 0.0, 0.0, 0.0],
-           [0.0, 0.0, 0.0, 0.0]]
-# Primary colors
-T_RED = [[1.0, 0.0, 0.0, 1.0],
-         [0.0, 0.0, 0.0, 0.0],
-         [0.0, 0.0, 0.0, 0.0],
-         [0.0, 0.0, 0.0, 0.0]]
-T_GREEN = [[0.0, 0.0, 0.0, 0.0],
-           [0.0, 1.0, 0.0, 1.0],
-           [0.0, 0.0, 0.0, 0.0],
-           [0.0, 0.0, 0.0, 0.0]]
-T_BLUE = [[0.0, 0.0, 0.0, 0.0],
-          [0.0, 0.0, 0.0, 0.0],
-          [0.0, 0.0, 1.0, 1.0],
-          [0.0, 0.0, 0.0, 0.0]]
-T_YELLOW = [[1.0, 0.0, 0.0, 1.0],
-            [0.0, 1.0, 0.0, 1.0],
-            [0.0, 0.0, 0.0, 0.0],
-            [0.0, 0.0, 0.0, 0.0]]
+def plot_matches_across_sections(df_matches, width=200, height=200):
+    """Plot point matches within each section
+
+    Parameters
+    ----------
+    df_matches : pd.DataFrame
+        DataFrame of point matches from a given stack (or stacks)
+    width : scalar (optional)
+        Width of each subplot
+    height : scalar (optional)
+        Height of each subplot
+
+    Returns
+    -------
+    chart : `alt.FacetChart`
+        (altair) plot of point matches within each section
+    """
+    # Filter DataFrame of point matches to cross section tile pairs
+    source = df_matches.loc[df_matches['pGroupId'] != df_matches['qGroupId']].copy()
+    # Add column specifying section pair
+    source['sections'] = [f"{pId} -- {qId}" for (pId, qId) in\
+                          zip(source['pGroupId'], source['qGroupId'])]
+
+    # Initialize chart by attempting to make a heatmap along rows, cols
+    if ('pc' in df_matches) and ('pr' in df_matches):
+        base = alt.Chart(source).encode(
+            x='pc:N',
+            y='pr:N'
+        )
+    # Rough alignment matches may not have 'pc', 'pr' data
+    else:
+        base = alt.Chart(source)
+
+    # Create heatmap from base
+    heatmap = base.mark_rect().encode(
+        color=alt.Color('N:Q'),
+    ).properties(
+        width=width,
+        height=height
+    )
+    text = base.mark_text(baseline='middle').encode(
+        text='N:Q',
+    )
+    # Facet heatmaps across sections and montage stacks
+    heatmap = alt.layer(heatmap, text, data=source).facet(
+        row='stack:N',
+        column='sections:N',
+    )
+    return heatmap

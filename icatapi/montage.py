@@ -7,13 +7,8 @@ from tqdm.notebook import tqdm
 
 from renderapi.client import (tilePairClient, pointMatchClient,
                               SiftPointMatchOptions, WithPool)
-from renderapi.stack import get_z_values_for_stack
-from renderapi.pointmatch import get_matches_within_group
-
-
-__all__ = ['get_tile_pairs_4_montage',
-           'generate_point_matches']
-        #    'get_matches_within_section'
+from renderapi.stack import get_z_values_for_stack, get_section_z_value
+from renderapi.pointmatch import get_matches_within_group, get_match_groupIds
 
 
 def get_tile_pairs_4_montage(stack, render,
@@ -26,9 +21,7 @@ def get_tile_pairs_4_montage(stack, render,
         Stack from which to generate DataFrame
     render : `renderapi.render.RenderClient`
         `render-ws` instance
-    tilePairClient_kwargs : dict
-        Optional keyword arguments to pass to `tilePairClient`
-        -----------
+    tilePairClient_kwargs : dict (optional)
         stack : str
             stack from which tilepairs should be considered
         minz : str
@@ -80,8 +73,7 @@ def get_tile_pairs_4_montage(stack, render,
         DataFrame of tile pairs from a given stack
     """
     # Initialize tile pairs DataFrame
-    pairs_cols = ['stack', 'z']
-    df_pairs = pd.DataFrame(columns=pairs_cols)
+    df_pairs = pd.DataFrame(columns=['stack', 'z'])
 
     # Iterate through stack's z values
     z_values = get_z_values_for_stack(stack=stack,
@@ -103,7 +95,8 @@ def get_tile_pairs_4_montage(stack, render,
     return df_pairs.reset_index(drop=True)
 
 
-def run_point_match_client(data, stack, collection, render, **pointMatchClient_kwargs):
+def run_point_match_client(data, stack, collection, render,
+                           **pointMatchClient_kwargs):
     """Point match client wrapper for use in multiprocessing"""
     tile_pair_batch, sift_options = data
     pointMatchClient(stack=stack,
@@ -115,13 +108,13 @@ def run_point_match_client(data, stack, collection, render, **pointMatchClient_k
 
 
 def generate_point_matches(df_pairs, match_collections, sift_options, render,
-                           N_cores=25, batch_size=12, **pointMatchClient_kwargs):
+                           N_cores=4, batch_size=12, **pointMatchClient_kwargs):
     """Generate point matches for a set of tile pairs
 
     Parameters
     ----------
     df_pairs : `pd.DataFrame`
-        DataFrame of tile pairs from a given stack
+        DataFrame of tile pairs from a given stack (or stacks)
     match_collections : dict
         Mapping of stack names to names of
         e.g. {'lil_EM': 'zebrafish_lil_EM_points',
@@ -133,8 +126,6 @@ def generate_point_matches(df_pairs, match_collections, sift_options, render,
     batch_size : scalar (optional)
         Number of tile pairs to include in each batch
     pointMatchClient_kwargs : dict
-        Optional keyword arguments to pass to `pointMatchClient`
-        -----------
         stack : str
             stack containing the tiles
         stack2 : str
@@ -217,46 +208,78 @@ def generate_point_matches(df_pairs, match_collections, sift_options, render,
                 pool.map(point_match_client_partial, zip(tp_batch, sift_options_batch))
 
 
-def remove_island_tiles():
-    pass
+def get_matches_within_section(stack, sectionId, match_collection, render):
+    """Wrapper for renderapi.pointmatches.get_matches_within_group
+
+    Parameters
+    ----------
+    sectionId : str
+        Section name (aka `groupId` in `renderapi` terminology)
+    match_collection : str
+        Name of match collection
+    render : `renderapi.render.RenderClient`
+        `render-ws` instance
+
+    Returns
+    -------
+    df_matches : `pd.DataFrame`
+        DataFrame of point matches from a given section
+    """
+    # Get z value from sectionId
+    z = get_section_z_value(stack=stack,
+                            sectionId=sectionId,
+                            render=render)
+    # Get matches within section
+    matches_json = get_matches_within_group(matchCollection=match_collection,
+                                            groupId=sectionId,
+                                            render=render)
+    # Convert json data to DataFrame and add z value
+    df = pd.json_normalize(matches_json)
+    df['z'] = z
+    return df.rename(columns={'matchCount': 'N'})
 
 
-# TODO: make this function work
-# def get_matches_within_section(match_collection, sectionId, render):
-#     """Create DataFrame of point matches for a given section
+def get_matches_within_stack(stack, match_collection, render):
+    """Collect point matches across each section in a stack
 
-#     Parameters
-#     ----------
-#     match_collection : str
-#         Name of match collection
-#     sectionId : str
-#         Name of section
-#         Aka `groupId` in `renderapi` terminology
-#     render : `renderapi.render.RenderClient`
-#         `render-ws` instance
+    Parameters
+    ----------
+    stack : str
+        Stack name
+    match_collection : str
+        Name of match collection
+    render : `renderapi.render.RenderClient`
+        `render-ws` instance
 
-#     Returns
-#     -------
-#     df_matches : `pd.DataFrame`
-#         DataFrame of point matches from a given section
-#     """
-#     # Initialize point matches DataFrame
-#     matches_cols = ['pc', 'pr', 'qc', 'qr', 'N_matches']
-#     df_matches = pd.DataFrame(columns=matches_cols)
+    Returns
+    -------
+    df_matches : `pd.DataFrame`
+        DataFrame of point matches from a given stack
+    """
+    # Initialize DataFrame for point matches
+    df_matches = pd.DataFrame(columns=['stack', 'z',
+                                       'pGroupId', 'pId', 'pc', 'pr',
+                                       'qGroupId', 'qId', 'qc', 'qr'])
 
-#     # Get point match data as json via `renderapi`
-#     matches_json = get_matches_within_group(matchCollection=match_collection,
-#                                             groupId=sectionId,
-#                                             render=render)
-#     # Create DataFrame from json and concatenate with point matches DataFrame
-#     df_matches = pd.concat([df_matches, json_normalize(matches_json)],
-#                            axis=1, sort=False)
+    # Get sectionIds per stack
+    sectionIds = get_match_groupIds(matchCollection=match_collection,
+                                    render=render)
+    # Loop through sectionIds
+    for sectionId in tqdm(sectionIds, leave=False):
 
-#     # Populate DataFrame with row, column and number of matches data
-#     df_matches[['pc', 'pr']] = np.stack(df_matches['pId'].apply(lambda x:\
-#                                    [int(i) for i in re.findall(r'\d+', x)[-2:]]))
-#     df_matches[['qc', 'qr']] = np.stack(df_matches['qId'].apply(lambda x:\
-#                                    [int(i) for i in re.findall(r'\d+', x)[-2:]]))
-#     df_matches['N_matches'] = df_matches['matches.p'].apply(lambda x:\
-#                                   np.array(x).shape[1])
-#     return df_matches
+        # Get matches within section
+        df = get_matches_within_section(stack=stack,
+                                        sectionId=sectionId,
+                                        match_collection=match_collection,
+                                        render=render)
+        # Aggregate matches
+        df_matches = pd.concat([df_matches, df])
+
+    # Format DataFrame
+    df_matches['stack'] = stack
+    # Add row/col indices
+    df_matches[['pc', 'pr']] = np.stack(df_matches['pId'].apply(lambda x:\
+                                        [int(i) for i in re.findall(r'\d+', x)[-2:]]))
+    df_matches[['qc', 'qr']] = np.stack(df_matches['qId'].apply(lambda x:\
+                                        [int(i) for i in re.findall(r'\d+', x)[-2:]]))
+    return df_matches

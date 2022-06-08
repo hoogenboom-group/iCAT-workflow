@@ -3,7 +3,6 @@ import pandas as pd
 
 from renderapi.render import get_stacks_by_owner_project
 from renderapi.tilespec import TileSpec, get_tile_specs_from_stack
-from renderapi.transform import AffineModel as AffineRender
 from renderapi.stack import create_stack, set_stack_state
 from renderapi.client import import_tilespecs
 
@@ -11,7 +10,7 @@ from renderapi.client import import_tilespecs
 __all__ = ['create_stack_DataFrame',
            'create_stacks_DataFrame',
            'create_project_DataFrame',
-           'create_stack_from_DataFrame']
+           'upload_stack_DataFrame']
 
 
 def create_stack_DataFrame(stack, render):
@@ -34,19 +33,19 @@ def create_stack_DataFrame(stack, render):
     for ts in get_tile_specs_from_stack(stack=stack,
                                         render=render):
         # Convert to dict
-        tile = ts.to_dict()
+        d_tile = ts.to_dict()
         # Adjust certain specifications
-        tile['minint'] = ts.minint
-        tile['maxint'] = ts.maxint
-        tile['imageUrl'] = ts.ip[0].imageUrl
-        tile['tforms'] = ts.tforms
-        # Remove bad keys
-        tile.pop('minIntensity', None)
-        tile.pop('maxIntensity', None)
-        tile.pop('mipmapLevels', None)
-        tile.pop('transforms', None)
-        # Append to collection
-        tile_specs.append(tile)
+        d_tile['minint'] = ts.minint
+        d_tile['maxint'] = ts.maxint
+        d_tile['imagePyramid'] = ts.ip
+        d_tile['tforms'] = ts.tforms
+        # Remove problematic keys
+        d_tile.pop('minIntensity', None)
+        d_tile.pop('maxIntensity', None)
+        d_tile.pop('mipmapLevels', None)
+        d_tile.pop('transforms', None)
+        # Add to collection
+        tile_specs.append(d_tile)
 
     # Create DataFrame from tile specifications
     df_stack = pd.DataFrame(tile_specs)
@@ -104,10 +103,10 @@ def create_project_DataFrame(render):
     return df_project
 
 
-def create_stack_from_DataFrame(df, render, name=None,
-                                stackResolutionX=None,
-                                stackResolutionY=None,
-                                stackResolutionZ=None):
+def upload_stack_DataFrame(df, render, name=None,
+                           stackResolutionX=None,
+                           stackResolutionY=None,
+                           stackResolutionZ=None):
     """Creates a `render-ws` stack from given DataFrame
 
     Parameters

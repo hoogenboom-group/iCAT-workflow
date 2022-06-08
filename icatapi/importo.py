@@ -1,185 +1,152 @@
 import re
-import warnings
-import xml.etree.ElementTree as ET
-
-import pandas as pd
 from bs4 import BeautifulSoup as Soup
+
+import numpy as np
+import pandas as pd
 from tifffile import TiffFile, TiffWriter
+from skimage import util
+from skimage.transform import pyramid_gaussian
+from tifffile import TiffWriter
 
-from skimage import img_as_uint
-from skimage.color import rgb2gray
-
-
-__all__ = ['parse_metadata',
-           'write_tif',
-           'split_tif']
+from renderapi.image_pyramid import ImagePyramid, MipMapLevel
 
 
 # TU Delft storage server
 HOST = 'https://sonic.tnw.tudelft.nl'
 
 
-def parse_metadata(filepath, stack=None, z=None, sectionId=None, host=HOST):
-    """Parses Odemis (single-page) tif file metadata
+def create_tile_dict(fp, d_tile=None, host=HOST):
+    """Parses Odemis OME-TIFF metadata to create a dict resembling a tile specification
 
     Parameters
     ----------
-    filepath : `pathlib.Path`
-        Path to image tile location as `pathlib.Path` object
-    section : str
-        Name of section to which image tile belongs
+    fp : `pathlib.Path`
+        Filepath
+    d_tile : dict, (optional)
+        Pre-populated tile dictionary
+    host : str (optional)
+        Host url for the image pyramid
 
     Returns
     -------
-    tile_dict : dict
+    d_tile : dict
         Almighty dictionary containing lots of juicy info about the image tile
     """
-    # Read metadata
-    # -------------
-    tif = TiffFile(filepath.as_posix())
+    # Extract metadata
+    # ----------------
+    tif = TiffFile(fp.as_posix())
     metadata = tif.pages[0].description
     soup = Soup(metadata, 'lxml')
 
-    # Infer stack and section info
-    # ----------------------------
-    if stack is None:
-        stack = filepath.parents[1].name
-    if sectionId is None:
-        sectionId = filepath.parents[0].name
-    if z is None:
-        z = int(re.findall(r'\d+', sectionId)[-1])
+    # Initialize tile dict
+    # --------------------
+    if d_tile is None:
+        d_tile = {}
+    # Infer stack, z value, and sectionId
+    if 'stack' not in d_tile:
+        d_tile['stack'] = fp.parents[2].name
+    if 'z' not in d_tile:
+        d_tile['z'] = -1
+    if 'sectionId' not in d_tile:
+        d_tile['sectionId'] = fp.parents[1].name
 
     # Layout parameters
     # -----------------
-    tile_dict = {}
-    # Infer image row and column from image tile filename
-    col, row = [int(i) for i in re.findall(r'\d+', filepath.stem)[-2:]]
-    tile_dict['imageRow'] = row
-    tile_dict['imageCol'] = col
+    # Infer image row and column from filepath
+    col, row = [int(i) for i in re.findall(r'\d+', fp.parent.name)[:2]]
+    d_tile['imageRow'] = row
+    d_tile['imageCol'] = col
     # Parse metadata for stage coordinates
-    tile_dict['stageX'] = 1e6 * float(soup.plane['positionx'])  # m --> um
-    tile_dict['stageY'] = 1e6 * float(soup.plane['positiony'])  # m --> um
+    d_tile['stageX'] = 1e6 * float(soup.plane['positionx'])  # m --> um
+    d_tile['stageY'] = 1e6 * float(soup.plane['positiony'])  # m --> um
     # Parse metadata for pixel size
     psx = 1e3 * float(soup.pixels['physicalsizex'])  # um --> nm
     psy = 1e3 * float(soup.pixels['physicalsizey'])  # um --> nm
-    tile_dict['pixelsize'] = (psx + psy) / 2         # nm/px
+    d_tile['pixelsize'] = (psx + psy) / 2            # nm/px
+    # Parse metadata for acquisition timestamp
+    d_tile['acqTime'] = pd.to_datetime(soup.acquisitiondate.text)
 
-    # Tile specification parameters
+    # Image pyramid
+    # -------------
+    # Create nested MipMapLevels
+    mmls = []
+    for mmfp in sorted(fp.parent.glob('[0-9].tif')):
+        level = mmfp.stem
+        imageUrl = f"{host}{mmfp.as_posix()}"
+        mml = MipMapLevel(level, imageUrl=imageUrl, maskUrl=None)
+        mmls.append(mml)
+    # Create ImagePyramid from MipMapLevels
+    ip = ImagePyramid({mm.level: mm.mipmap for mm in mmls})
+    d_tile['imagePyramid'] = ip
+
+    # Remaining tile specifications
     # -----------------------------
-    tile_dict['stack'] = stack
-    tile_dict['z'] = z
-    tile_dict['sectionId'] = sectionId
     # Set unique tileId
-    tile_dict['tileId'] = f"{stack}-{sectionId}-{col:05d}x{row:05d}"
+    d_tile['tileId'] = f"{d_tile['stack']}-{d_tile['sectionId']}-{col:05d}x{row:05d}"
     # Parse metadata for width and height
-    tile_dict['width'] = int(soup.pixels['sizex'])
-    tile_dict['height'] = int(soup.pixels['sizey'])
-    # Set imageUrl and maskUrl
-    tile_dict['imageUrl'] = f"{host}{filepath.as_posix()}"
-    tile_dict['maskUrl'] = None
+    d_tile['width'] = int(soup.pixels['sizex'])
+    d_tile['height'] = int(soup.pixels['sizey'])
     # Set min, max intensity levels at 16bit uint limits
-    tile_dict['minint'] = 0
-    tile_dict['maxint'] = 2**16 - 1
+    d_tile['minint'] = 0
+    d_tile['maxint'] = 2**16 - 1
     # Set empty list of transforms
-    tile_dict['tforms'] = []
+    d_tile['tforms'] = []
 
-    # Additional tile specification parameters
-    # ----------------------------------------
-    # Parse metadata for acquisition time
-    tile_dict['acqTime'] = pd.to_datetime(soup.acquisitiondate.text)
-
-    return tile_dict
+    return d_tile
 
 
-def write_tif(fp, image):
-    """Simple wrapper for tifffile.TiffWriter"""
-    # Convert to grayscale 16-bit image
-    if len(image.shape) > 2:
-        image = rgb2gray(image)
-    with warnings.catch_warnings():      # Suppress precision
-        warnings.simplefilter('ignore')  # loss warnings
-        image = img_as_uint(image)
-
-    # Save to disk with `TiffWriter`
-    fp.parent.mkdir(parents=False, exist_ok=True)
-    with TiffWriter(fp.as_posix()) as tif:
-        tif.save(image)
-
-
-def split_tif(tif):
-    """Divide multi-channel tif
+def create_mipmaps(image, dir_out, metadata=None, dtype=np.uint16, invert=False,
+                   downscale=2, max_layer=8, preserve_range=True,
+                   **pyramid_kwargs):
+    """Generates and writes an image pyramid to disk (mipmaps)
 
     Parameters
     ----------
-    tif : `TiffFile`
-        Input tif file
+    image : ndarray
+        Base image of the pyramid
+    dir_out : `pathlib.Path`
+        Output directory for mipmaps
+        Individual mipmaps are saved as `dir_out/level.tif`
+    metadata : str or encoded bytes (optional)
+        Description of the image as 7-bit ASCII
+        In practice this is the ome-xml metadata written by Odemis
+        Passed (confusingly) to `description` argument of TiffWriter.save
+    dtype : dtype (optional)
+        The type of the output array
+    invert : bool
+        Whether to invert the contrast
+    downscale : scalar (optional)
+        Downscale factor
+    max_layer : scalar (optional)
+        Number of layers for the pyramid
+    preserve_range : bool (optional)
+        Whether to keep the original range of values
+    pyramid_kwargs : dict (optional)
+        Additional keyword arguments passed to `skimage.transform.pyramid_gaussian`
 
-    Returns
-    -------
-    tifs : dict
-        Mapping from each channel to tuple containing image data + metadata
-        {'channel': (ndarray, Soup)}
+    Notes
+    -----
+    * Currently only writes .tif files
     """
-    # Read tif metadata
-    soup = Soup(tif.pages[0].description, 'lxml')
+    # Conditionally invert contrast
+    if invert:
+        image = util.invert(image)
 
-    # Iterate through pages and image metadata
-    tifs = {}
-    for page, metadata in zip(tif.pages, soup.find_all('image')):
+    # Create image pyramid
+    pyramid = pyramid_gaussian(image,
+                               downscale=downscale,
+                               max_layer=max_layer,
+                               preserve_range=preserve_range,
+                               **pyramid_kwargs)
+    # Format pyramid as dict {0: image, 1: image//2, 2: image//4}
+    d_pyramid = {level: mipmap.astype(dtype) for level, mipmap in enumerate(pyramid)}    
 
-        # --- Build up metadata for each new tif ---
-        # Create ET root with OME header info
-        root = ET.Element('OME', attrib={
-                "xmlns": "http://www.openmicroscopy.org/Schemas/OME/2012-06",
-                "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-                "xsi:schemaLocation": "http://www.openmicroscopy.org/Schemas/OME/2012-06 "
-                                      "http://www.openmicroscopy.org/Schemas/OME/2012-06/ome.xsd"})
-        # Add OME comment
-        com_txt = ("Warning: this comment is an OME-XML metadata block, which "
-                   "contains crucial dimensional parameters and other important "
-                   "metadata. Please edit cautiously (if at all), and back up the "
-                   "original data before doing so. For more information, see the "
-                   "OME-TIFF web site: http://ome-xml.org/wiki/OmeTiff.")
-        root.append(ET.Comment(com_txt))
-
-        # --- Instrument layout ---
-        # Add instrument and microscope tags
-        instr = ET.SubElement(root, "Instrument", attrib={"ID": "Instrument:0"})
-        micro = ET.SubElement(instr, "Microscope", attrib={
-            "Manufacturer": "Delmic",
-            "Model": "SECOM"})
-
-        # Extract detector, lightsource, and objective settings
-        # Add detector settings to instrument
-        if metadata.detectorsettings is not None:
-            for detector in soup.find_all('detector'):
-                if detector['id'] == metadata.detectorsettings['id']:
-                    instr.append(ET.fromstring(detector.decode()))
-        else:
-            detector = ET.SubElement(instr, "Detector", attrib={
-                "ID": "Detector:0",
-                "model": "pcie-6251"})
-        # Add lightsource settings to instrument
-        if metadata.lightsourcesettings is not None:
-            for lightsource in soup.find_all('lightsource'):
-                if lightsource['id'] == metadata.lightsourcesettings['id']:
-                    instr.append(ET.fromstring(lightsource.decode()))
-        # Add objective settings to instrument
-        if metadata.objectivesettings is not None:
-            for objective in soup.find_all('objective'):
-                if objective['id'] == metadata.objectivesettings['id']:
-                    instr.append(ET.fromstring(objective.decode()))
-
-        # --- Image layout ---
-        root.append(ET.fromstring(metadata.decode()))
-
-        # Convert ElementTree to Soup
-        tree = ET.ElementTree(root)
-        et = (b'<?xml version="1.0" encoding="UTF-8"?>' +
-              ET.tostring(tree.getroot(), encoding='utf-8'))
-        md = Soup(et, 'lxml')
-
-        # --- Populate tifs dict ---
-        tifs[page.tags['PageName'].value] = (page.asarray(), md)
-
-    return tifs
+    # Write mipmaps to disk
+    for level, mipmap in d_pyramid.items():
+        # Only write metadata to level 0 mipmap
+        if level != 0:
+            metadata = None
+        # Set filepath for mipmap
+        fp = dir_out / f"{int(level)}.tif"
+        with TiffWriter(fp.as_posix()) as _tif:
+            _tif.save(mipmap, description=metadata)

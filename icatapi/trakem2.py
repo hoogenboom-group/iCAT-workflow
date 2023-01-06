@@ -142,12 +142,13 @@ def import_trakem2_project(stack, xml_filepath, render):
             # Define layout
             z = float(layer.attrs['z'])
             col, row = [int(i) for i in re.findall(r'\d+', d['title'])][-2:]
-            layout = Layout(sectionId=f'S{int(z):03d}',
+            sectionId = f'S{int(z):03d}'
+            layout = Layout(sectionId=sectionId,
                             imageRow=row,
                             imageCol=col)
 
             # Create tile specification
-            ts = TileSpec(tileId=d['title'],
+            ts = TileSpec(tileId=f"{sectionId}-{col:05d}x{row:05d}",
                           z=z,
                           width=d['width'],
                           height=d['height'],

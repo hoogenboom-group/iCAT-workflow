@@ -6,7 +6,6 @@ import pandas as pd
 from tifffile import TiffFile, TiffWriter
 from skimage import util
 from skimage.transform import pyramid_gaussian
-from tifffile import TiffWriter
 
 from renderapi.image_pyramid import ImagePyramid, MipMapLevel
 

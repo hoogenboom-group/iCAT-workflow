@@ -223,7 +223,7 @@ def get_transform_from_metadata(filepath):
         Affine transform as numpy array
     """
     # Split CLEM image
-    image_FM, metadata_FM, image_EM, metadata_EM = split_images(filepath)
+    image_FM, metadata_FM, image_EM, metadata_EM = split_CLEM_image(filepath)
 
     # Parse metadata for relevant transformation data
     (psx_FM, psy_FM), ro_FM, sh_FM, (trx_FM, try_FM) = parse_transform_metadata(metadata_FM)

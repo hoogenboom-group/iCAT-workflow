@@ -170,7 +170,9 @@ def compute_relative_transform_from_filepaths(fp_EM, fp_FM):
     return A
 
 
-def split_images(filepath, page_name_FM='Filtered colour 1', page_name_EM='Secondary electrons'):
+def split_CLEM_image(filepath,
+                     page_name_FM='Filtered colour 1',
+                     page_name_EM='Secondary electrons'):
     """Split CLEM image into FM and EM images
     
     Parameters

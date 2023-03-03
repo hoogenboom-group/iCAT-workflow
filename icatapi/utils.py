@@ -2,9 +2,6 @@ import numpy as np
 from skimage import color, exposure
 
 
-__all__ = ['colorize']
-
-
 def rescale(image, pcts):
     """Rescale intensity utility function"""
     p1, p2 = np.percentile(image, pcts)

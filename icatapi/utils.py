@@ -5,11 +5,19 @@ from skimage import color, exposure
 __all__ = ['colorize']
 
 
+def rescale(image, pcts):
+    """Rescale intensity utility function"""
+    p1, p2 = np.percentile(image, pcts)
+    return exposure.rescale_intensity(image, in_range=(p1, p2))
+
+
 def colorize(image, T):
     """Colorize image
+
     Parameters
     ----------
     image : (M, N) array
+
     Returns
     -------
     rescaled : rgba float array

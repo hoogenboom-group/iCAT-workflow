@@ -61,18 +61,18 @@ def parse_transform_metadata(metadata):
         Stage-based translation in x, y [m]
     """
     # Calculate pixel size in x & y
-    md = metadata.pixels
-    psx = 1e-6 * float(md['physicalsizex'])  # um --> m
-    psy = 1e-6 * float(md['physicalsizey'])  # um --> m
+    md = metadata.Pixels
+    psx = 1e-6 * float(md['PhysicalSizeX'])  # um --> m
+    psy = 1e-6 * float(md['PhysicalSizeY'])  # um --> m
     pixelsize = (psx, psy)
 
     # Parse out rotation matrix
-    md = metadata.transform
+    md = metadata.Transform
     if md is not None:
-        A00 = float(md['a00'])  # /         \
-        A01 = float(md['a01'])  # | a00  a01 |
-        A10 = float(md['a10'])  # | a10  a11 |
-        A11 = float(md['a11'])  # \         /
+        A00 = float(md['A00'])  # /         \
+        A01 = float(md['A01'])  # | a00  a01 |
+        A10 = float(md['A10'])  # | a10  a11 |
+        A11 = float(md['A11'])  # \         /
         # QR decomposition into Rotation and Scale matrices
         A = np.array([[A00, A10],
                       [A01, A11]])
@@ -89,9 +89,9 @@ def parse_transform_metadata(metadata):
         shear = 0
 
     # Translation
-    md = metadata.plane
-    x0 = float(md['positionx'])
-    y0 = float(md['positiony'])
+    md = metadata.Plane
+    x0 = float(md['PositionX'])
+    y0 = float(md['PositionY'])
     translation = (x0, y0)
 
     return pixelsize, rotation, shear, translation

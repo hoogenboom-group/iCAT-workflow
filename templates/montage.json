@@ -11,33 +11,27 @@
        "owner": "",
        "project": "",
        "name": "",
-       "host": "sonic.tnw.tudelft.nl",
-       "port": 8080,
-       "mongo_host": "sonic.tnw.tudelft.nl",
-       "mongo_port": 27017,
+       "host": "localhost",
+       "port": 8081,
        "client_scripts": "/home/catmaid/render/render-ws-java-client/src/main/scripts",
        "collection_type": "stack",
-       "db_interface": "mongo"
+       "db_interface": "render"
    },
    "pointmatch": {
        "owner": "",
        "name": "",
-       "host": "sonic.tnw.tudelft.nl",
-       "port": 8080,
-       "mongo_host": "sonic.tnw.tudelft.nl",
-       "mongo_port": 27017,
+       "host": "localhost",
+       "port": 8081,
        "client_scripts": "/home/catmaid/render/render-ws-java-client/src/main/scripts",
        "collection_type": "pointmatch",
-       "db_interface": "mongo"
+       "db_interface": "render"
    },
    "output_stack": {
        "owner": "",
        "project": "",
        "name": "",
-       "host": "sonic.tnw.tudelft.nl",
-       "port": 8080,
-       "mongo_host": "sonic.tnw.tudelft.nl",
-       "mongo_port": 27017,
+       "host": "localhost",
+       "port": 8081,
        "client_scripts": "/home/catmaid/render/render-ws-java-client/src/main/scripts",
        "collection_type": "stack",
        "db_interface": "render"

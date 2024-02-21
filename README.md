@@ -1,3 +1,9 @@
+# iCAT-workflow for modern SECOM software
+This is a fork of the original iCAT-workflow repository, updated to work with the latest SECOM software. The original README is below.
+Note that this version of the iCAT-workflow is not compatible with the original SECOM software.
+
+In the new SECOM software, the metadata is stored with slightly different keys.
+
 # iCAT-workflow
 Post-processing workflow for volume CLEM image data.
 

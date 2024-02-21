@@ -1,4 +1,5 @@
 import ast
+from curses import meta
 
 import numpy as np
 from bs4 import BeautifulSoup as Soup
@@ -35,6 +36,7 @@ def get_transform_metadata(filepath):
 
     # Parse the transform metadata for each image in tif
     tform_md = {}
+    # print(metadata)
     for md in metadata.find_all('image'):
         if md['name'] != 'Composited image preview':
             tform_md[md['name']] = parse_transform_metadata(md)
@@ -61,9 +63,9 @@ def parse_transform_metadata(metadata):
         Stage-based translation in x, y [m]
     """
     # Calculate pixel size in x & y
-    md = metadata.Pixels
-    psx = 1e-6 * float(md['PhysicalSizeX'])  # um --> m
-    psy = 1e-6 * float(md['PhysicalSizeY'])  # um --> m
+    md = metadata.pixels
+    psx = 1e-6 * float(md['physicalsizex'])  # um --> m
+    psy = 1e-6 * float(md['physicalsizey'])  # um --> m
     pixelsize = (psx, psy)
 
     # Parse out rotation matrix
@@ -89,9 +91,9 @@ def parse_transform_metadata(metadata):
         shear = 0
 
     # Translation
-    md = metadata.Plane
-    x0 = float(md['PositionX'])
-    y0 = float(md['PositionY'])
+    md = metadata.plane
+    x0 = float(md['positionx'])
+    y0 = float(md['positiony'])
     translation = (x0, y0)
 
     return pixelsize, rotation, shear, translation
@@ -133,7 +135,7 @@ def compute_relative_transform(psx_EM, psy_EM,
                    .skew(0, -sh_EM)\
                    .scale(psx_FM / psx_EM,
                           psy_FM / psy_EM)\
-                   .translate((trx_FM - trx_EM) /  psx_EM,
+                   .translate((trx_FM - trx_EM) / psx_EM,
                               (try_FM - try_EM) / -psy_EM)
     return A.get_matrix()
 
@@ -174,7 +176,7 @@ def split_CLEM_image(filepath,
                      page_name_FM='Filtered colour 1',
                      page_name_EM='Secondary electrons'):
     """Split CLEM image into FM and EM images
-    
+
     Parameters
     ----------
     filepath : `pathlib.Path`
@@ -183,7 +185,7 @@ def split_CLEM_image(filepath,
         TIFF page name for FM data
     page_name_EM : str
         TIFF page name for EM data
-    
+
     Returns
     -------
     image_FM : (M, N) array
@@ -199,24 +201,28 @@ def split_CLEM_image(filepath,
     md = Soup(tif.pages[0].description, features='xml')
 
     # Split CLEM image
-    image_FM = next(page.asarray() for page in tif.pages if page.tags['PageName'].value == page_name_FM)
-    image_EM = next(page.asarray() for page in tif.pages if page.tags['PageName'].value == page_name_EM)
+    image_FM = next(page.asarray()
+                    for page in tif.pages if page.tags['PageName'].value == page_name_FM)
+    image_EM = next(page.asarray()
+                    for page in tif.pages if page.tags['PageName'].value == page_name_EM)
 
     # Get respective metadata
-    metadata_FM = next(d for d in md.find_all('Image') if d['Name'] == page_name_FM)
-    metadata_EM = next(d for d in md.find_all('Image') if d['Name'] == page_name_EM)
+    metadata_FM = next(d for d in md.find_all(
+        'Image') if d['Name'] == page_name_FM)
+    metadata_EM = next(d for d in md.find_all(
+        'Image') if d['Name'] == page_name_EM)
 
     return image_FM, metadata_FM, image_EM, metadata_EM
 
 
 def get_transform_from_metadata(filepath):
     """Get CLEM overlay transform from metadata
-    
+
     Parameters
     ----------
     filepath : `pathlib.Path`
         Filepath to CLEM image
-    
+
     Returns
     -------
     T : (3, 3) array
@@ -226,8 +232,10 @@ def get_transform_from_metadata(filepath):
     image_FM, metadata_FM, image_EM, metadata_EM = split_CLEM_image(filepath)
 
     # Parse metadata for relevant transformation data
-    (psx_FM, psy_FM), ro_FM, sh_FM, (trx_FM, try_FM) = parse_transform_metadata(metadata_FM)
-    (psx_EM, psy_EM), ro_EM, sh_EM, (trx_EM, try_EM) = parse_transform_metadata(metadata_EM)
+    (psx_FM, psy_FM), ro_FM, sh_FM, (trx_FM,
+                                     try_FM) = parse_transform_metadata(metadata_FM)
+    (psx_EM, psy_EM), ro_EM, sh_EM, (trx_EM,
+                                     try_EM) = parse_transform_metadata(metadata_EM)
 
     # Translations to center images
     x0_FM, y0_FM = (d/2 for d in image_FM.shape)
@@ -238,7 +246,7 @@ def get_transform_from_metadata(filepath):
     sy = psy_FM / psy_EM
     theta = -ro_FM
     shear = -sh_EM
-    tx =  (trx_FM - trx_EM) / psx_EM
+    tx = (trx_FM - trx_EM) / psx_EM
     ty = -(try_FM - try_EM) / psy_EM
 
     # Chain transformations
@@ -291,7 +299,7 @@ def parse_overlay_report(filepath):
         EM spot coordinates in EM pixel space
     """
     # Parse overlay report for EM spot coordinates and other goodies
-    with open (filepath) as txt:
+    with open(filepath) as txt:
         for line in txt.readlines():
             if 'Grid size' in line:
                 grid_shape_str = line
@@ -313,15 +321,19 @@ def parse_overlay_report(filepath):
     coords = np.array(ast.literal_eval(coords_str.split(':\t')[1]))
     # Convert coords to EM pixel space
     coords_EM = np.zeros_like(coords)
-    coords_EM[:,0] = (coords[:,0] - coords[:,0].min()) / (coords[:,0] - coords[:,0].min()).max() * Nx
-    coords_EM[:,1] = (coords[:,1] - coords[:,1].min()) / (coords[:,1] - coords[:,1].min()).max() * Ny
+    coords_EM[:, 0] = (coords[:, 0] - coords[:, 0].min()) / \
+        (coords[:, 0] - coords[:, 0].min()).max() * Nx
+    coords_EM[:, 1] = (coords[:, 1] - coords[:, 1].min()) / \
+        (coords[:, 1] - coords[:, 1].min()).max() * Ny
     # Scale EM coordinates
     # | window in which CL spots are placed are "shrunk" wrt the full SEM FoV
     # | by a factor `(n-1)/n` where `n` is the number of CL spots per row
     # | https://github.com/delmic/odemis/blob/master/src/odemis/acq/align/find_overlay.py#L694
     scale = tuple((n - 1) / n for n in grid_shape)
-    coords_EM[:,0] = scale[0] * (coords_EM[:,0] - coords_EM[:,0].max()/2) + coords_EM[:,0].max()/2
-    coords_EM[:,1] = scale[1] * (coords_EM[:,1] - coords_EM[:,1].max()/2) + coords_EM[:,1].max()/2
+    coords_EM[:, 0] = scale[0] * \
+        (coords_EM[:, 0] - coords_EM[:, 0].max()/2) + coords_EM[:, 0].max()/2
+    coords_EM[:, 1] = scale[1] * \
+        (coords_EM[:, 1] - coords_EM[:, 1].max()/2) + coords_EM[:, 1].max()/2
 
     return coords_EM
 
@@ -334,7 +346,8 @@ def get_distances_to_points(points, n=2):
     [1] https://codereview.stackexchange.com/a/28210
     """
     points = points.astype(float)
-    distances = [np.sort(np.sum((point - points)**2, axis=1))[1:1+n] for point in points]
+    distances = [np.sort(np.sum((point - points)**2, axis=1))[1:1+n]
+                 for point in points]
     return np.array(distances)
 
 
@@ -373,16 +386,17 @@ def detect_CL_peaks(filepath, grid_shape=(4, 4), min_distance=25):
                                    exclude_border=True)
 
     # Swap x, y
-    peaks = peaks[:,::-1]  # (not totally sure why this has to be done)
+    peaks = peaks[:, ::-1]  # (not totally sure why this has to be done)
     # Filter outliers based on point-to-point distances
     # | Idea is that sometimes there are bright spots/artefacts in the CL image
     # | not from the e-beam grid. The distance from each spot in the grid to its
-    # | nearest >= 2 neighbors (2 for corner spots, 3 for edge spots, 4 for 
+    # | nearest >= 2 neighbors (2 for corner spots, 3 for edge spots, 4 for
     # | central spots) should be uniform, so filter on this basis.
     distances = get_distances_to_points(peaks, n=2)
-    peaks = peaks[np.abs(distances - np.median(distances)).sum(axis=1).argsort()][:N_peaks]
+    peaks = peaks[np.abs(distances - np.median(distances)
+                         ).sum(axis=1).argsort()][:N_peaks]
     # Sort by ascending y, x to match EM spot coordinates
-    peaks = peaks[np.lexsort((peaks[:,1], peaks[:,0]))]
+    peaks = peaks[np.lexsort((peaks[:, 1], peaks[:, 0]))]
 
     return peaks
 

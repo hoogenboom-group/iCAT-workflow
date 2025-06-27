@@ -256,7 +256,6 @@ def render_neighborhood_image(stack, tileId, neighborhood=1, width=1024,
     return image
 
 
-
 def plot_tile_map(stacks, render=None, **kwargs):
     """Plots tiles (as matplotlib patches) in `render-ws`
 
@@ -312,13 +311,16 @@ def plot_tile_map(stacks, render=None, **kwargs):
                 xy = np.array(b.exterior.xy).T
                 p = Polygon(xy, color=cmap[stack], alpha=0.2, label=stack)
                 # Add patch to axis
-                if i != 0: ax.add_patch(p)             # Only add first patch
-                else: handles.append(ax.add_patch(p))  # to legend handles
+                if i != 0:
+                    ax.add_patch(p)             # Only add first patch
+                else:
+                    handles.append(ax.add_patch(p))  # to legend handles
                 # Label first tile in tileset
                 x, y = np.array(b.centroid.xy).ravel()
                 s = f"{stack}\n{sectionId}\n"\
                     f"{tile['imageCol']:02.0f}x{tile['imageRow']:02.0f}"
-                if i == 0: ax.text(x, y, s, ha='center', va='center')
+                if i == 0:
+                    ax.text(x, y, s, ha='center', va='center')
 
         # Axis aesthetics
         ax.set_title(sectionId)
@@ -334,6 +336,8 @@ def plot_tile_map(stacks, render=None, **kwargs):
         ax.set_xlim(bounds[:, 0].min(), bounds[:, 0].max())
         ax.set_ylim(bounds[:, 1].min(), bounds[:, 1].max())
         ax.invert_yaxis()
+
+    return fig
 
 
 def plot_stacks(stacks, z_values=None, width=1024, render=None,
@@ -445,14 +449,14 @@ def plot_stacks_interactive(z, stack_images, render=None):
     # Get stack names as keys
     stacks = list(stack_images.keys())
     # Setup figure
-    ncols=len(stacks)
+    ncols = len(stacks)
     fig, axes = plt.subplots(ncols=ncols, sharex=True, sharey=True,
                              squeeze=False, figsize=(7*ncols, 7))
     # Map each stack to an axis
     axmap = {k: v for k, v in zip(stacks, axes.flat)}
     # Get extent from global bounds
     bounds = np.array([list(get_stack_bounds(
-              stack=stack, render=render).values()) for stack in stacks])
+        stack=stack, render=render).values()) for stack in stacks])
     extent = [bounds[:, 0].min(axis=0), bounds[:, 3].max(axis=0),  # minx, maxx
               bounds[:, 1].min(axis=0), bounds[:, 4].max(axis=0)]  # miny, maxy
     # Loop through stacks to plot images
@@ -542,7 +546,7 @@ def plot_matches_across_sections(df_matches, width=200, height=200):
     # Filter DataFrame of point matches to cross section tile pairs
     source = df_matches.loc[df_matches['pGroupId'] != df_matches['qGroupId']].copy()
     # Add column specifying section pair
-    source['sections'] = [f"{pId} -- {qId}" for (pId, qId) in\
+    source['sections'] = [f"{pId} -- {qId}" for (pId, qId) in
                           zip(source['pGroupId'], source['qGroupId'])]
 
     # Initialize chart by attempting to make a heatmap along rows, cols

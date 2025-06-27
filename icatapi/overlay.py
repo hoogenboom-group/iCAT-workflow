@@ -69,6 +69,9 @@ def parse_transform_metadata(metadata):
 
     # Parse out rotation matrix
     md = metadata.transform
+    if md is None:
+        md = metadata.Transform
+    
     if md is not None:
         A00 = float(md['a00'])  # /         \
         A01 = float(md['a01'])  # | a00  a01 |

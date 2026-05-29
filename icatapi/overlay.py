@@ -160,6 +160,7 @@ def parse_transform_metadata(metadata, md_full, is_fm, is_em):
 
     # print(md_full.mapannotation)
     if not is_em:
+        # if not EM, then is is CLEM, so need to know if it is the EM or FM part of the CLEM image
         if is_fm:
             # rotation = float(str(md_full.mapannotation).split("\n")[3].lstrip('<m k="Rotation">').rstrip("</m>"))
             # shear = float(str(md_full.mapannotation).split("\n")[4].lstrip('<m k="Shear">').rstrip("</m>"))

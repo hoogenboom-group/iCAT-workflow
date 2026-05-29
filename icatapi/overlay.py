@@ -12,37 +12,128 @@ from tifffile import TiffFile
 from .utils import rescale
 
 
+# def get_transform_metadata(filepath):
+#     """Parse Odemis tif file for transform data
+
+#     Parameters
+#     ----------
+#     filepath : `Path`
+#         Path to image file
+
+#     Returns
+#     -------
+#     tform_md : tuple
+#         All the relevant Odemis transform data
+#         * pixelsize     | pixel size in x, y [m]
+#         * rotation      | rotation angle [rad]
+#         * shear         | shear [?]
+#         * translation   | stage-based translation in x, y [m]
+#     """
+#     # Gather metadata as `Soup`
+#     tif = TiffFile(filepath.as_posix())
+#     xml_data = tif.pages[0].description
+#     metadata = Soup(xml_data, 'lxml')
+
+#     # Parse the transform metadata for each image in tif
+#     tform_md = {}
+#     for md in metadata.find_all('image'):
+#         if md['name'] != 'Composited image preview':
+#             print(md)
+#             tform_md[md['name']] = parse_transform_metadata(md)
+#     return tform_md
+
+
+# def parse_transform_metadata(metadata):
+#     """Parse Odemis metadata for transform data
+
+#     Parameters
+#     ----------
+#     metadata : `Soup`
+#         Odemis metadata in a warm bowl of soup
+
+#     Returns
+#     -------
+#     pixelsize : tuple
+#         Image pixel size in x, y [m]
+#     rotation : float
+#         Image rotation angle [rad]
+#     shear : float
+#         Image shear [?]
+#     translation : tuple
+#         Stage-based translation in x, y [m]
+#     """
+#     # Calculate pixel size in x & y
+#     md = metadata.pixels
+#     psx = 1e-6 * float(md['physicalsizex'])  # um --> m
+#     psy = 1e-6 * float(md['physicalsizey'])  # um --> m
+#     pixelsize = (psx, psy)
+
+#     # Parse out rotation matrix
+#     md = metadata.transform
+#     if md is None:
+#         md = metadata.Transform
+
+#     if md is not None:
+#         A00 = float(md['a00'])  # /         \
+#         A01 = float(md['a01'])  # | a00  a01 |
+#         A10 = float(md['a10'])  # | a10  a11 |
+#         A11 = float(md['a11'])  # \         /
+#         # QR decomposition into Rotation and Scale matrices
+#         A = np.array([[A00, A10],
+#                       [A01, A11]])
+#         print(A)
+#         R, S = np.linalg.qr(A)
+#         mask = np.diag(S) < 0.
+#         R[:, mask] *= -1.
+#         S[mask, :] *= -1.
+#         # Calculate rotation angle and shear
+#         rotation = np.arctan2(R[1, 0], R[0, 0])
+#         rotation %= (2*np.pi)  # Odemis convention
+#         shear = S[0, 1] / S[0, 0]
+#     else:
+#         rotation = 0
+#         shear = 0
+
+#     # Translation
+#     md = metadata.plane
+#     x0 = float(md['positionx'])
+#     y0 = float(md['positiony'])
+#     translation = (x0, y0)
+
+#     return pixelsize, rotation, shear, translation
+
 def get_transform_metadata(filepath):
-    """Parse Odemis tif file for transform data
-
-    Parameters
-    ----------
-    filepath : `Path`
-        Path to image file
-
-    Returns
-    -------
-    tform_md : tuple
-        All the relevant Odemis transform data
-        * pixelsize     | pixel size in x, y [m]
-        * rotation      | rotation angle [rad]
-        * shear         | shear [?]
-        * translation   | stage-based translation in x, y [m]
-    """
     # Gather metadata as `Soup`
+    filepath_old = filepath
+    section_name = filepath_old.parent.parent.name
+    tile_name = filepath.parent.name
+    is_fm = "exc_" in filepath_old.parents[2].name
+
+    is_em = "himag" in filepath_old.parents[2].name
+
+    if is_em:
+        filepath = filepath_old.parents[4] / section_name / "EM-grid" / ("tile-" + tile_name + ".tiff")
+    else:
+        filepath = filepath_old.parents[4] / section_name / "CLEM-grid" / ("tile-" + tile_name + ".tiff")
+
+    # print(filepath)
+
+    # print(section_name)
+    # print(filepath)
     tif = TiffFile(filepath.as_posix())
     xml_data = tif.pages[0].description
     metadata = Soup(xml_data, 'lxml')
 
+    # print(metadata)
     # Parse the transform metadata for each image in tif
     tform_md = {}
     for md in metadata.find_all('image'):
         if md['name'] != 'Composited image preview':
-            tform_md[md['name']] = parse_transform_metadata(md)
+            tform_md[md['name']] = parse_transform_metadata(md, metadata, is_fm, is_em)
     return tform_md
 
 
-def parse_transform_metadata(metadata):
+def parse_transform_metadata(metadata, md_full, is_fm, is_em):
     """Parse Odemis metadata for transform data
 
     Parameters
@@ -62,41 +153,156 @@ def parse_transform_metadata(metadata):
         Stage-based translation in x, y [m]
     """
     # Calculate pixel size in x & y
-    md = metadata.pixels
-    psx = 1e-6 * float(md['physicalsizex'])  # um --> m
-    psy = 1e-6 * float(md['physicalsizey'])  # um --> m
-    pixelsize = (psx, psy)
+    # md = metadata.pixels
+    # psx = 1e-6 * float(md['physicalsizex'])  # um --> m
+    # psy = 1e-6 * float(md['physicalsizey'])  # um --> m
+    # pixelsize = (psx, psy)
 
-    # Parse out rotation matrix
-    md = metadata.transform
-    if md is None:
-        md = metadata.Transform
-    
-    if md is not None:
-        A00 = float(md['a00'])  # /         \
-        A01 = float(md['a01'])  # | a00  a01 |
-        A10 = float(md['a10'])  # | a10  a11 |
-        A11 = float(md['a11'])  # \         /
-        # QR decomposition into Rotation and Scale matrices
-        A = np.array([[A00, A10],
-                      [A01, A11]])
-        R, S = np.linalg.qr(A)
-        mask = np.diag(S) < 0.
-        R[:, mask] *= -1.
-        S[mask, :] *= -1.
-        # Calculate rotation angle and shear
-        rotation = np.arctan2(R[1, 0], R[0, 0])
-        rotation %= (2*np.pi)  # Odemis convention
-        shear = S[0, 1] / S[0, 0]
+    # print(md_full.mapannotation)
+    if not is_em:
+        if is_fm:
+            # rotation = float(str(md_full.mapannotation).split("\n")[3].lstrip('<m k="Rotation">').rstrip("</m>"))
+            # shear = float(str(md_full.mapannotation).split("\n")[4].lstrip('<m k="Shear">').rstrip("</m>"))
+            # md = metadata.plane
+            # x0 = float(md['positionx'])
+            # y0 = float(md['positiony'])
+            # translation = (x0, y0)
+            mapanotation = iter(str(md_full).splitlines())
+            line = next(mapanotation)
+            while '<image id="Image:0"' not in line:
+                line = next(mapanotation)
+            while '<pixels' not in line:
+                line = next(mapanotation)
+                if '<pixels' in line:
+                    for thing in line.split(" "):
+                        if "physicalsizex=" in thing:
+                            psx = float(thing.lstrip('physicalsizex="').rstrip('"'))
+                        if "physicalsizey=" in thing:
+                            psy = float(thing.lstrip('physicalsizey="').rstrip('"'))
+            pixelsize = (1e-6 * psx, 1e-6 * psy)
+
+            mapanotation = iter(str(md_full).splitlines())
+            line = next(mapanotation)
+            while '<mapannotation id="Annotation:0">' not in line:
+                line = next(mapanotation)
+            while '<m k="Rotation">' not in line:
+                line = next(mapanotation)
+                if '<m k="Rotation">' in line:
+                    rotation = float(line.lstrip('<m k="Rotation">').rstrip("</m>"))
+
+            mapanotation = iter(str(md_full).splitlines())
+            line = next(mapanotation)
+            while '<mapannotation id="Annotation:0">' not in line:
+                line = next(mapanotation)
+            while '<m k="Shear">' not in line:
+                line = next(mapanotation)
+                if '<m k="Shear">' in line:
+                    shear = float(line.lstrip('<m k="Shear">').rstrip("</m>"))
+
+            mapanotation = iter(str(md_full).splitlines())
+            line = next(mapanotation)
+            while '<image id="Image:0"' not in line:
+                line = next(mapanotation)
+            while '<plane' not in line:
+                line = next(mapanotation)
+                if '<plane' in line:
+                    for thing in line.split(" "):
+                        if "positionx=" in thing:
+                            x0 = float(thing.lstrip('positionx="').rstrip('"'))
+                        if "positiony=" in thing:
+                            y0 = float(thing.lstrip('positiony="').rstrip('"'))
+                    translation = (x0, y0)
+        else:
+            rotation = 0
+            mapanotation = iter(str(md_full).splitlines())
+            line = next(mapanotation)
+            while '<image id="Image:1"' not in line:
+                line = next(mapanotation)
+            while '<pixels' not in line:
+                line = next(mapanotation)
+                if '<pixels' in line:
+                    for thing in line.split(" "):
+                        if "physicalsizex=" in thing:
+                            psx = float(thing.lstrip('physicalsizex="').rstrip('"'))
+                        if "physicalsizey=" in thing:
+                            psy = float(thing.lstrip('physicalsizey="').rstrip('"'))
+            pixelsize = (1e-6 * psx, 1e-6 * psy)
+
+            mapanotation = iter(str(md_full).splitlines())
+            line = next(mapanotation)
+            while '<mapannotation id="Annotation:1">' not in line:
+                line = next(mapanotation)
+            # while '<m k="Rotation">' not in line:
+            #     line = next(mapanotation)
+            #     if '<m k="Rotation">' in line:
+            #         rotation = float(line.lstrip('<m k="Rotation">').rstrip("</m>"))
+
+            mapanotation = iter(str(md_full).splitlines())
+            line = next(mapanotation)
+            while '<mapannotation id="Annotation:1">' not in line:
+                line = next(mapanotation)
+            while '<m k="Shear">' not in line:
+                line = next(mapanotation)
+                if '<m k="Shear">' in line:
+                    shear = float(line.lstrip('<m k="Shear">').rstrip("</m>"))
+
+            mapanotation = iter(str(md_full).splitlines())
+            line = next(mapanotation)
+            while '<image id="Image:1"' not in line:
+                line = next(mapanotation)
+            while '<plane' not in line:
+                line = next(mapanotation)
+                if '<plane' in line:
+                    for thing in line.split(" "):
+                        if "positionx=" in thing:
+                            x0 = float(thing.lstrip('positionx="').rstrip('"'))
+                        if "positiony=" in thing:
+                            y0 = float(thing.lstrip('positiony="').rstrip('"'))
+                    translation = (x0, y0)
     else:
+        md = metadata.pixels
+        psx = 1e-6 * float(md['physicalsizex'])  # um --> m
+        psy = 1e-6 * float(md['physicalsizey'])  # um --> m
+        pixelsize = (psx, psy)
+
         rotation = 0
-        shear = 0
+        mapanotation = iter(str(md_full).splitlines())
+        line = next(mapanotation)
+        while '<mapannotation id="Annotation:0">' not in line:
+            line = next(mapanotation)
+        # while '<m k="Rotation">' not in line:
+        #     line = next(mapanotation)
+        #     if '<m k="Rotation">' in line:
+        #         rotation = float(line.lstrip('<m k="Rotation">').rstrip("</m>"))
+
+        mapanotation = iter(str(md_full).splitlines())
+        line = next(mapanotation)
+        while '<mapannotation id="Annotation:0">' not in line:
+            line = next(mapanotation)
+        while '<m k="Shear">' not in line:
+            line = next(mapanotation)
+            if '<m k="Shear">' in line:
+                shear = float(line.lstrip('<m k="Shear">').rstrip("</m>"))
+
+        mapanotation = iter(str(md_full).splitlines())
+        line = next(mapanotation)
+        while '<image id="Image:0"' not in line:
+            line = next(mapanotation)
+        while '<plane' not in line:
+            line = next(mapanotation)
+            if '<plane' in line:
+                for thing in line.split(" "):
+                    if "positionx=" in thing:
+                        x0 = float(thing.lstrip('positionx="').rstrip('"'))
+                    if "positiony=" in thing:
+                        y0 = float(thing.lstrip('positiony="').rstrip('"'))
+                translation = (x0, y0)
 
     # Translation
-    md = metadata.plane
-    x0 = float(md['positionx'])
-    y0 = float(md['positiony'])
-    translation = (x0, y0)
+    # md = metadata.plane
+    # x0 = float(md['positionx'])
+    # y0 = float(md['positiony'])
+    # translation = (x0, y0)
 
     return pixelsize, rotation, shear, translation
 
@@ -160,7 +366,9 @@ def compute_relative_transform_from_filepaths(fp_EM, fp_FM):
     """
     # Parse transform data
     tform_md_EM = list(get_transform_metadata(fp_EM).values())[0]
+    print(tform_md_EM)
     tform_md_FM = list(get_transform_metadata(fp_FM).values())[0]
+    print(tform_md_FM)
     (psx_EM, psy_EM), ro_EM, sh_EM, (trx_EM, try_EM) = tform_md_EM
     (psx_FM, psy_FM), ro_FM, sh_FM, (trx_FM, try_FM) = tform_md_FM
 

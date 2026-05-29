@@ -78,7 +78,7 @@ def get_tile_pairs_4_montage(stack, render,
     # Iterate through stack's z values
     z_values = get_z_values_for_stack(stack=stack,
                                       render=render)
-    for z in z_values:
+    for z in tqdm(z_values):
         # Generate tile pairs
         tile_pairs_json = tilePairClient(stack=stack,
                                          minz=z,
